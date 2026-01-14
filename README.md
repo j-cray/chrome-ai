@@ -2,6 +2,8 @@
 
 A beautiful, performant Chrome extension that integrates Google's built-in AI models directly into your browser with full page context awareness. Built with Material Design 3 for a stunning user experience.
 
+![Chrome AI Sidebar Preview](https://github.com/user-attachments/assets/14ac0577-2896-4d91-aa06-ad1d4b53cc75)
+
 ## ✨ Features
 
 - **🚀 Local & Fast**: Uses Google's on-device Gemini Nano model for instant responses
