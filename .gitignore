@@ -7,6 +7,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+*.py
 
 # Node modules (if needed in future)
 node_modules/
