@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chrome AI Sidebar</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <span class="material-icons header-icon">smart_toy</span>
+        <h1 class="header-title">Chrome AI</h1>
+        <button id="settingsBtn" class="icon-button" title="Settings">
+          <span class="material-icons">settings</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Status Bar -->
+    <div id="statusBar" class="status-bar">
+      <div class="status-content">
+        <span id="statusIcon" class="material-icons status-icon">info</span>
+        <span id="statusText" class="status-text">Initializing AI...</span>
+      </div>
+    </div>
+
+    <!-- Chat Container -->
+    <main class="chat-container" id="chatContainer">
+      <div class="welcome-screen" id="welcomeScreen">
+        <span class="material-icons welcome-icon">psychology</span>
+        <h2>Welcome to Chrome AI</h2>
+        <p>Powered by Google's built-in AI models</p>
+        <div class="feature-chips">
+          <div class="chip">
+            <span class="material-icons chip-icon">speed</span>
+            <span>Local & Fast</span>
+          </div>
+          <div class="chip">
+            <span class="material-icons chip-icon">privacy_tip</span>
+            <span>Private</span>
+          </div>
+          <div class="chip">
+            <span class="material-icons chip-icon">auto_awesome</span>
+            <span>Context-Aware</span>
+          </div>
+        </div>
+      </div>
+      <div class="messages" id="messages"></div>
+    </main>
+
+    <!-- Input Area -->
+    <footer class="input-area">
+      <div class="input-controls">
+        <button id="contextBtn" class="icon-button context-btn" title="Include page context">
+          <span class="material-icons">article</span>
+        </button>
+        <div class="input-wrapper">
+          <textarea 
+            id="promptInput" 
+            class="prompt-input" 
+            placeholder="Ask anything..." 
+            rows="1"
+          ></textarea>
+        </div>
+        <button id="sendBtn" class="icon-button send-btn" title="Send">
+          <span class="material-icons">send</span>
+        </button>
+      </div>
+      <div class="input-footer">
+        <span id="modelInfo" class="model-info">
+          <span class="material-icons">offline_bolt</span>
+          <span id="modelName">Loading...</span>
+        </span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>
