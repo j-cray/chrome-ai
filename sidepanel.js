@@ -8,6 +8,10 @@ class ChromeAIApp {
     this.includeContext = false;
     this.messages = [];
     this.performanceMetrics = { lastResponseTime: 0 };
+    
+    // Configuration constants
+    this.MAX_CONTEXT_LENGTH = 8000; // Maximum context length for AI queries
+    
     this.initializeApp();
   }
 
@@ -192,9 +196,8 @@ class ChromeAIApp {
         let fullPrompt = prompt;
         if (context && context.text) {
           // Optimize context by truncating if too long
-          const maxContextLength = 8000;
-          const contextText = context.text.length > maxContextLength 
-            ? context.text.substring(0, maxContextLength) + '...'
+          const contextText = context.text.length > this.MAX_CONTEXT_LENGTH 
+            ? context.text.substring(0, this.MAX_CONTEXT_LENGTH) + '...'
             : context.text;
           
           fullPrompt = `Context from page "${context.title}" (${context.url}):\n\n${contextText}\n\n---\n\nUser question: ${prompt}`;
@@ -374,7 +377,8 @@ class ChromeAIApp {
     }
   }
 
-  // Optimized scroll using requestAnimationFrame
+  // Optimized scroll using requestAnimationFrame to prevent layout thrashing
+  // and ensure smooth scrolling by batching DOM reads/writes
   scrollToBottom() {
     requestAnimationFrame(() => {
       this.elements.chatContainer.scrollTop = this.elements.chatContainer.scrollHeight;

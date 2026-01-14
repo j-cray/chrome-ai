@@ -1,8 +1,12 @@
 // Background service worker for Chrome AI extension
 
+// Configuration constants
+const MAX_CONTEXT_LENGTH = 10000; // Maximum characters to extract from page
+const CACHE_DURATION = 30000; // 30 seconds
+const MAX_CACHE_ENTRIES = 20; // Maximum number of cached contexts
+
 // Performance optimization: cache for page contexts
 const contextCache = new Map();
-const CACHE_DURATION = 30000; // 30 seconds
 
 // Open side panel when extension icon is clicked
 chrome.sidePanel
@@ -52,14 +56,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         
         chrome.scripting.executeScript({
           target: { tabId: tabs[0].id },
-          func: () => {
+          func: (maxLength) => {
             return {
               title: document.title,
               url: window.location.href,
-              text: document.body.innerText.substring(0, 10000), // Limit context size
+              text: document.body.innerText.substring(0, maxLength),
               selectedText: window.getSelection().toString()
             };
-          }
+          },
+          args: [MAX_CONTEXT_LENGTH]
         }).then((results) => {
           const contextData = results[0].result;
           
@@ -70,7 +75,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           });
           
           // Clean old cache entries
-          if (contextCache.size > 20) {
+          if (contextCache.size > MAX_CACHE_ENTRIES) {
             const oldestKey = contextCache.keys().next().value;
             contextCache.delete(oldestKey);
           }
