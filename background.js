@@ -1,5 +1,9 @@
 // Background service worker for Chrome AI extension
 
+// Performance optimization: cache for page contexts
+const contextCache = new Map();
+const CACHE_DURATION = 30000; // 30 seconds
+
 // Open side panel when extension icon is clicked
 chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: true })
@@ -36,6 +40,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Get page context from active tab
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]) {
+        const tabId = tabs[0].id;
+        const cacheKey = `${tabId}_${tabs[0].url}`;
+        
+        // Check cache first for performance
+        const cached = contextCache.get(cacheKey);
+        if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+          sendResponse({ context: cached.data });
+          return;
+        }
+        
         chrome.scripting.executeScript({
           target: { tabId: tabs[0].id },
           func: () => {
@@ -47,7 +61,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             };
           }
         }).then((results) => {
-          sendResponse({ context: results[0].result });
+          const contextData = results[0].result;
+          
+          // Cache the result
+          contextCache.set(cacheKey, {
+            data: contextData,
+            timestamp: Date.now()
+          });
+          
+          // Clean old cache entries
+          if (contextCache.size > 20) {
+            const oldestKey = contextCache.keys().next().value;
+            contextCache.delete(oldestKey);
+          }
+          
+          sendResponse({ context: contextData });
         }).catch((error) => {
           sendResponse({ error: error.message });
         });

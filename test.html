@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chrome AI Extension Test Page</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.6;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+    }
+    
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+    
+    h1 {
+      color: #6750A4;
+      border-bottom: 3px solid #EADDFF;
+      padding-bottom: 10px;
+    }
+    
+    .section {
+      margin: 30px 0;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #6750A4;
+    }
+    
+    h2 {
+      color: #6750A4;
+      margin-top: 0;
+    }
+    
+    .highlight {
+      background: #EADDFF;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    
+    ul {
+      line-height: 1.8;
+    }
+    
+    .cta {
+      background: #6750A4;
+      color: white;
+      padding: 15px 30px;
+      border-radius: 8px;
+      text-align: center;
+      margin: 20px 0;
+      font-weight: 500;
+    }
+    
+    code {
+      background: #e9ecef;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🤖 Chrome AI Extension Test Page</h1>
+    
+    <div class="cta">
+      Try the Chrome AI extension! Press <code>Ctrl+Shift+Y</code> or click the extension icon.
+    </div>
+
+    <div class="section">
+      <h2>What is Chrome AI?</h2>
+      <p>
+        Chrome AI is a cutting-edge browser extension that brings Google's powerful 
+        <span class="highlight">Gemini Nano</span> model directly into your browser. 
+        Unlike cloud-based AI assistants, Chrome AI runs entirely on your device, 
+        ensuring your privacy while delivering lightning-fast responses.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>Key Features</h2>
+      <ul>
+        <li><strong>On-Device Processing:</strong> All AI computations happen locally on your machine</li>
+        <li><strong>Context-Aware:</strong> Can analyze the current page content to provide relevant answers</li>
+        <li><strong>Privacy-First:</strong> No data is sent to external servers</li>
+        <li><strong>Beautiful UI:</strong> Material Design 3 interface with smooth animations</li>
+        <li><strong>Instant Responses:</strong> Streaming responses for real-time interaction</li>
+        <li><strong>Smart Summarization:</strong> Automatically summarizes page content when asked</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>Try These Examples</h2>
+      <p>Select any of the following text and right-click to "Ask Chrome AI":</p>
+      <ul>
+        <li><span class="highlight">"What are the main benefits of on-device AI?"</span></li>
+        <li><span class="highlight">"Explain quantum computing in simple terms"</span></li>
+        <li><span class="highlight">"What's the difference between AI and machine learning?"</span></li>
+      </ul>
+      <p>Or click the document icon in the sidebar and ask: <span class="highlight">"Summarize this page"</span></p>
+    </div>
+
+    <div class="section">
+      <h2>Technical Background</h2>
+      <p>
+        This extension leverages Chrome's experimental AI APIs, including:
+      </p>
+      <ul>
+        <li><code>window.ai.languageModel</code> - For conversational AI</li>
+        <li><code>window.ai.summarizer</code> - For intelligent text summarization</li>
+        <li><code>chrome.sidePanel</code> - For the sidebar interface</li>
+      </ul>
+      <p>
+        The Gemini Nano model is part of Google's initiative to bring AI capabilities 
+        directly into the browser, reducing latency and improving privacy. The model 
+        is downloaded once and runs entirely on your device using optimized machine 
+        learning frameworks.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>Performance Characteristics</h2>
+      <ul>
+        <li><strong>Response Time:</strong> Typically 500ms - 2s depending on query complexity</li>
+        <li><strong>Memory Usage:</strong> ~200-400MB when model is loaded</li>
+        <li><strong>Model Size:</strong> ~1.5GB downloaded once</li>
+        <li><strong>Offline Capable:</strong> Works without internet connection</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>Privacy & Security</h2>
+      <p>
+        Chrome AI is designed with privacy as a core principle:
+      </p>
+      <ul>
+        <li>All processing happens locally on your device</li>
+        <li>No conversation data is sent to external servers</li>
+        <li>Context extraction is opt-in and temporary</li>
+        <li>No telemetry or analytics are collected</li>
+        <li>Open source for full transparency</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>Future Enhancements</h2>
+      <p>Potential features being considered:</p>
+      <ul>
+        <li>Multi-language translation using Chrome's Translation API</li>
+        <li>Code syntax highlighting in responses</li>
+        <li>Conversation export and history</li>
+        <li>Custom prompts and templates</li>
+        <li>Integration with more Chrome AI preview features</li>
+      </ul>
+    </div>
+
+    <p style="text-align: center; margin-top: 40px; color: #666;">
+      Built with ❤️ using Chrome's cutting-edge AI capabilities
+    </p>
+  </div>
+</body>
+</html>

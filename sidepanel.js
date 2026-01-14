@@ -4,8 +4,10 @@
 class ChromeAIApp {
   constructor() {
     this.session = null;
+    this.summarizer = null;
     this.includeContext = false;
     this.messages = [];
+    this.performanceMetrics = { lastResponseTime: 0 };
     this.initializeApp();
   }
 
@@ -25,6 +27,7 @@ class ChromeAIApp {
       promptInput: document.getElementById('promptInput'),
       sendBtn: document.getElementById('sendBtn'),
       contextBtn: document.getElementById('contextBtn'),
+      clearBtn: document.getElementById('clearBtn'),
       statusBar: document.getElementById('statusBar'),
       statusIcon: document.getElementById('statusIcon'),
       statusText: document.getElementById('statusText'),
@@ -51,6 +54,9 @@ class ChromeAIApp {
     // Toggle context inclusion
     this.elements.contextBtn.addEventListener('click', () => this.toggleContext());
 
+    // Clear chat
+    this.elements.clearBtn.addEventListener('click', () => this.clearChat());
+
     // Focus input on load
     this.elements.promptInput.focus();
   }
@@ -74,10 +80,15 @@ class ChromeAIApp {
         this.showStatus('Downloading AI model... This may take a while.', 'info');
       }
 
-      // Create AI session
+      // Create AI session with optimized settings
       this.session = await window.ai.languageModel.create({
-        systemPrompt: 'You are a helpful AI assistant integrated into Chrome. Provide concise, accurate, and helpful responses. When given page context, use it to provide more relevant answers.'
+        systemPrompt: 'You are a helpful AI assistant integrated into Chrome. Provide concise, accurate, and helpful responses. When given page context, use it to provide more relevant answers.',
+        temperature: 0.8,
+        topK: 3
       });
+
+      // Try to initialize summarizer API if available
+      await this.initializeSummarizer();
 
       this.showStatus('AI ready! Start chatting below.', 'success');
       this.elements.modelName.textContent = 'Gemini Nano';
@@ -90,6 +101,25 @@ class ChromeAIApp {
       this.showStatus(error.message, 'error');
       this.elements.modelName.textContent = 'Unavailable';
       this.elements.sendBtn.disabled = true;
+    }
+  }
+
+  async initializeSummarizer() {
+    try {
+      if (window.ai && window.ai.summarizer) {
+        const summarizerCapabilities = await window.ai.summarizer.capabilities();
+        if (summarizerCapabilities.available !== 'no') {
+          this.summarizer = await window.ai.summarizer.create({
+            type: 'key-points',
+            format: 'markdown',
+            length: 'medium'
+          });
+          console.log('Summarizer API initialized');
+        }
+      }
+    } catch (error) {
+      console.warn('Summarizer not available:', error);
+      // Non-critical, continue without summarizer
     }
   }
 
@@ -134,6 +164,9 @@ class ChromeAIApp {
     // Hide welcome screen
     this.elements.welcomeScreen.style.display = 'none';
 
+    // Performance tracking
+    const startTime = performance.now();
+
     // Get page context if enabled
     let context = null;
     if (this.includeContext) {
@@ -149,36 +182,74 @@ class ChromeAIApp {
     const loadingMessage = this.addLoadingMessage();
 
     try {
-      // Prepare full prompt with context
-      let fullPrompt = prompt;
-      if (context && context.text) {
-        fullPrompt = `Context from page "${context.title}" (${context.url}):\n\n${context.text.substring(0, 5000)}\n\n---\n\nUser question: ${prompt}`;
+      // Check if this is a summarization request
+      const isSummarizationRequest = this.isSummarizationRequest(prompt);
+      
+      if (isSummarizationRequest && this.summarizer && context && context.text) {
+        await this.handleSummarization(context.text, loadingMessage);
+      } else {
+        // Prepare full prompt with context
+        let fullPrompt = prompt;
+        if (context && context.text) {
+          // Optimize context by truncating if too long
+          const maxContextLength = 8000;
+          const contextText = context.text.length > maxContextLength 
+            ? context.text.substring(0, maxContextLength) + '...'
+            : context.text;
+          
+          fullPrompt = `Context from page "${context.title}" (${context.url}):\n\n${contextText}\n\n---\n\nUser question: ${prompt}`;
+        }
+
+        // Stream response from AI
+        const stream = this.session.promptStreaming(fullPrompt);
+        let fullResponse = '';
+
+        // Remove loading message
+        loadingMessage.remove();
+
+        // Add assistant message that will be updated
+        const assistantMessage = this.addMessage('assistant', '');
+
+        for await (const chunk of stream) {
+          fullResponse = chunk.trim();
+          this.updateMessage(assistantMessage, fullResponse);
+        }
+
+        // Store in messages history
+        this.messages.push({ role: 'user', content: prompt, context });
+        this.messages.push({ role: 'assistant', content: fullResponse });
       }
 
-      // Stream response from AI
-      const stream = this.session.promptStreaming(fullPrompt);
-      let fullResponse = '';
-
-      // Remove loading message
-      loadingMessage.remove();
-
-      // Add assistant message that will be updated
-      const assistantMessage = this.addMessage('assistant', '');
-
-      for await (const chunk of stream) {
-        fullResponse = chunk.trim();
-        this.updateMessage(assistantMessage, fullResponse);
-      }
-
-      // Store in messages history
-      this.messages.push({ role: 'user', content: prompt, context });
-      this.messages.push({ role: 'assistant', content: fullResponse });
+      // Track performance
+      const endTime = performance.now();
+      this.performanceMetrics.lastResponseTime = endTime - startTime;
+      console.log(`Response generated in ${Math.round(this.performanceMetrics.lastResponseTime)}ms`);
 
     } catch (error) {
       console.error('Error getting AI response:', error);
       loadingMessage.remove();
       this.addMessage('assistant', `Sorry, I encountered an error: ${error.message}`);
       this.showStatus('Error generating response', 'error');
+    }
+  }
+
+  isSummarizationRequest(prompt) {
+    const summarizeKeywords = ['summarize', 'summary', 'tldr', 'tl;dr', 'key points', 'main points'];
+    const lowerPrompt = prompt.toLowerCase();
+    return summarizeKeywords.some(keyword => lowerPrompt.includes(keyword));
+  }
+
+  async handleSummarization(text, loadingMessage) {
+    try {
+      const summary = await this.summarizer.summarize(text);
+      loadingMessage.remove();
+      this.addMessage('assistant', `📝 Summary:\n\n${summary}`);
+      
+      this.messages.push({ role: 'user', content: 'Summarize this page' });
+      this.messages.push({ role: 'assistant', content: summary });
+    } catch (error) {
+      console.error('Summarization error:', error);
+      throw error;
     }
   }
 
@@ -273,10 +344,6 @@ class ChromeAIApp {
     this.scrollToBottom();
   }
 
-  scrollToBottom() {
-    this.elements.chatContainer.scrollTop = this.elements.chatContainer.scrollHeight;
-  }
-
   showStatus(message, type = 'info') {
     this.elements.statusText.textContent = message;
     this.elements.statusBar.classList.remove('error');
@@ -295,6 +362,23 @@ class ChromeAIApp {
 
   hideStatus() {
     this.elements.statusBar.classList.remove('active');
+  }
+
+  clearChat() {
+    if (confirm('Clear all messages? This cannot be undone.')) {
+      this.messages = [];
+      this.elements.messages.innerHTML = '';
+      this.elements.welcomeScreen.style.display = 'flex';
+      this.showStatus('Chat cleared', 'info');
+      setTimeout(() => this.hideStatus(), 2000);
+    }
+  }
+
+  // Optimized scroll using requestAnimationFrame
+  scrollToBottom() {
+    requestAnimationFrame(() => {
+      this.elements.chatContainer.scrollTop = this.elements.chatContainer.scrollHeight;
+    });
   }
 }
 
