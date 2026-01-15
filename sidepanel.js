@@ -12,12 +12,26 @@ class ChromeAIApp {
     // Configuration constants
     this.MAX_CONTEXT_LENGTH = 8000; // Maximum context length for AI queries
     
-    // AI mode: 'chrome', 'gemini', or 'lmstudio'
+    // AI mode: 'chrome', 'gemini', 'openai', 'anthropic', or 'lmstudio'
     this.aiMode = 'chrome';
+    
+    // LM Studio config
     this.lmstudioUrl = 'http://localhost:1234/v1/chat/completions';
     this.lmstudioModel = '';
+    
+    // Gemini config
     this.geminiApiKey = '';
     this.geminiModel = 'gemini-pro';
+    this.geminiAuthMethod = 'apikey'; // 'apikey' or 'oauth'
+    this.geminiOAuthToken = null;
+    
+    // OpenAI config
+    this.openaiApiKey = '';
+    this.openaiModel = 'gpt-4-turbo-preview';
+    
+    // Anthropic config
+    this.anthropicApiKey = '';
+    this.anthropicModel = 'claude-3-opus-20240229';
     
     this.initializeApp();
   }
@@ -44,15 +58,40 @@ class ChromeAIApp {
       settingsPanel: document.getElementById('settingsPanel'),
       closeSettingsBtn: document.getElementById('closeSettingsBtn'),
       saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+      
+      // AI mode radio buttons
       chromeModeRadio: document.getElementById('chromeModeRadio'),
       geminiModeRadio: document.getElementById('geminiModeRadio'),
+      openaiModeRadio: document.getElementById('openaiModeRadio'),
+      anthropicModeRadio: document.getElementById('anthropicModeRadio'),
       lmstudioModeRadio: document.getElementById('lmstudioModeRadio'),
+      
+      // Gemini settings
       geminiSettings: document.getElementById('geminiSettings'),
+      geminiAuthMethod: document.getElementById('geminiAuthMethod'),
+      geminiApiKeyGroup: document.getElementById('geminiApiKeyGroup'),
+      geminiOAuthGroup: document.getElementById('geminiOAuthGroup'),
       geminiApiKey: document.getElementById('geminiApiKey'),
+      geminiOAuthBtn: document.getElementById('geminiOAuthBtn'),
+      geminiOAuthStatus: document.getElementById('geminiOAuthStatus'),
       geminiModel: document.getElementById('geminiModel'),
+      
+      // OpenAI settings
+      openaiSettings: document.getElementById('openaiSettings'),
+      openaiApiKey: document.getElementById('openaiApiKey'),
+      openaiModel: document.getElementById('openaiModel'),
+      
+      // Anthropic settings
+      anthropicSettings: document.getElementById('anthropicSettings'),
+      anthropicApiKey: document.getElementById('anthropicApiKey'),
+      anthropicModel: document.getElementById('anthropicModel'),
+      
+      // LM Studio settings
       lmstudioSettings: document.getElementById('lmstudioSettings'),
       lmstudioUrl: document.getElementById('lmstudioUrl'),
       lmstudioModel: document.getElementById('lmstudioModel'),
+      
+      // Status and info
       statusBar: document.getElementById('statusBar'),
       statusIcon: document.getElementById('statusIcon'),
       statusText: document.getElementById('statusText'),
@@ -90,7 +129,15 @@ class ChromeAIApp {
     // AI mode radio buttons
     this.elements.chromeModeRadio.addEventListener('change', () => this.updateSettingsUI());
     this.elements.geminiModeRadio.addEventListener('change', () => this.updateSettingsUI());
+    this.elements.openaiModeRadio.addEventListener('change', () => this.updateSettingsUI());
+    this.elements.anthropicModeRadio.addEventListener('change', () => this.updateSettingsUI());
     this.elements.lmstudioModeRadio.addEventListener('change', () => this.updateSettingsUI());
+    
+    // Gemini auth method toggle
+    this.elements.geminiAuthMethod.addEventListener('change', () => this.toggleGeminiAuthMethod());
+    
+    // OAuth button
+    this.elements.geminiOAuthBtn.addEventListener('click', () => this.handleGeminiOAuth());
     
     // Close settings on backdrop click
     this.elements.settingsPanel.addEventListener('click', (e) => {
@@ -109,6 +156,10 @@ class ChromeAIApp {
         await this.initializeChromeAI();
       } else if (this.aiMode === 'gemini') {
         await this.initializeGeminiAPI();
+      } else if (this.aiMode === 'openai') {
+        await this.initializeOpenAI();
+      } else if (this.aiMode === 'anthropic') {
+        await this.initializeAnthropic();
       } else if (this.aiMode === 'lmstudio') {
         await this.initializeLMStudio();
       }
@@ -249,7 +300,99 @@ class ChromeAIApp {
     }
   }
 
-  async initializeSummarizer() {
+  async initializeOpenAI() {
+    // Validate API key
+    if (!this.openaiApiKey) {
+      throw new Error('OpenAI API key is required. Please configure it in settings.');
+    }
+
+    // Test API key with a simple request
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.openaiApiKey}`
+        },
+        body: JSON.stringify({
+          model: this.openaiModel,
+          messages: [{ role: 'user', content: 'Hello' }],
+          max_tokens: 10
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(`OpenAI API error: ${error.error?.message || response.statusText}`);
+      }
+
+      this.showStatus('OpenAI connected!', 'success');
+      this.elements.modelName.textContent = this.openaiModel;
+      this.elements.sendBtn.disabled = false;
+      
+      setTimeout(() => this.hideStatus(), 3000);
+
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Connection to OpenAI timed out. Please check your internet connection.');
+      }
+      throw new Error(`Failed to connect to OpenAI: ${error.message}`);
+    }
+  }
+
+  async initializeAnthropic() {
+    // Validate API key
+    if (!this.anthropicApiKey) {
+      throw new Error('Anthropic API key is required. Please configure it in settings.');
+    }
+
+    // Test API key with a simple request
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.anthropicApiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: this.anthropicModel,
+          messages: [{ role: 'user', content: 'Hello' }],
+          max_tokens: 10
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(`Anthropic API error: ${error.error?.message || response.statusText}`);
+      }
+
+      this.showStatus('Anthropic connected!', 'success');
+      this.elements.modelName.textContent = this.anthropicModel;
+      this.elements.sendBtn.disabled = false;
+      
+      setTimeout(() => this.hideStatus(), 3000);
+
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Connection to Anthropic timed out. Please check your internet connection.');
+      }
+      throw new Error(`Failed to connect to Anthropic: ${error.message}`);
+    }
+  }
+
     try {
       if (window.ai && window.ai.summarizer) {
         const summarizerCapabilities = await window.ai.summarizer.capabilities();
