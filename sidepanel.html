@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <script src="theme.js"></script>
 </head>
+
 <body>
   <div class="app-container">
     <!-- Settings Panel -->
@@ -20,7 +22,7 @@
             <span class="material-icons">close</span>
           </button>
         </div>
-        
+
         <div class="settings-section">
           <h3>AI Provider</h3>
           <div class="radio-group">
@@ -74,7 +76,8 @@
           <div class="form-group" id="geminiApiKeyGroup">
             <label for="geminiApiKey">API Key</label>
             <input type="password" id="geminiApiKey" class="text-input" placeholder="Enter your Gemini API key">
-            <span class="input-hint">Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a></span>
+            <span class="input-hint">Get your API key from <a href="https://makersuite.google.com/app/apikey"
+                target="_blank">Google AI Studio</a></span>
           </div>
           <div class="form-group" id="geminiOAuthGroup" style="display: none;">
             <button id="geminiOAuthBtn" class="secondary-button">
@@ -99,7 +102,8 @@
           <div class="form-group">
             <label for="openaiApiKey">API Key</label>
             <input type="password" id="openaiApiKey" class="text-input" placeholder="Enter your OpenAI API key">
-            <span class="input-hint">Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a></span>
+            <span class="input-hint">Get your API key from <a href="https://platform.openai.com/api-keys"
+                target="_blank">OpenAI Platform</a></span>
           </div>
           <div class="form-group">
             <label for="openaiModel">Model</label>
@@ -117,7 +121,8 @@
           <div class="form-group">
             <label for="anthropicApiKey">API Key</label>
             <input type="password" id="anthropicApiKey" class="text-input" placeholder="Enter your Anthropic API key">
-            <span class="input-hint">Get your API key from <a href="https://console.anthropic.com/" target="_blank">Anthropic Console</a></span>
+            <span class="input-hint">Get your API key from <a href="https://console.anthropic.com/"
+                target="_blank">Anthropic Console</a></span>
           </div>
           <div class="form-group">
             <label for="anthropicModel">Model</label>
@@ -134,7 +139,8 @@
           <h3>LM Studio Configuration</h3>
           <div class="form-group">
             <label for="lmstudioUrl">Server URL</label>
-            <input type="text" id="lmstudioUrl" class="text-input" value="http://localhost:1234/v1/chat/completions" placeholder="http://localhost:1234/v1/chat/completions">
+            <input type="text" id="lmstudioUrl" class="text-input" value="http://localhost:1234/v1/chat/completions"
+              placeholder="http://localhost:1234/v1/chat/completions">
           </div>
           <div class="form-group">
             <label for="lmstudioModel">Model Name (optional)</label>
@@ -150,17 +156,38 @@
       </div>
     </div>
 
+    <!-- History Panel -->
+    <div id="historyPanel" class="settings-panel">
+      <div class="settings-content">
+        <div class="settings-header">
+          <h2>Chat History</h2>
+          <button id="closeHistoryBtn" class="icon-button">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div id="historyList" class="history-list">
+          <!-- History items will be populated here -->
+          <div class="empty-state">No chat history yet</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Header -->
-    <header class="header">
+    <header class="header thin-header">
       <div class="header-content">
         <span class="material-icons header-icon">smart_toy</span>
         <h1 class="header-title">Chrome AI</h1>
-        <button id="clearBtn" class="icon-button" title="Clear chat">
-          <span class="material-icons">delete_outline</span>
-        </button>
-        <button id="settingsBtn" class="icon-button" title="Settings">
-          <span class="material-icons">settings</span>
-        </button>
+        <div class="header-actions">
+          <button id="historyBtn" class="icon-button" title="History">
+            <span class="material-icons">history</span>
+          </button>
+          <button id="newChatBtn" class="icon-button" title="New Conversation">
+            <span class="material-icons">add</span>
+          </button>
+          <button id="settingsBtn" class="icon-button" title="Settings">
+            <span class="material-icons">settings</span>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -202,13 +229,18 @@
         <button id="contextBtn" class="icon-button context-btn" title="Include page context">
           <span class="material-icons">article</span>
         </button>
+        <button id="fileBtn" class="icon-button" title="Attach file">
+          <span class="material-icons">attach_file</span>
+        </button>
+        <button id="cameraBtn" class="icon-button" title="Take photo">
+          <span class="material-icons">photo_camera</span>
+        </button>
+        <button id="micBtn" class="icon-button" title="Voice input">
+          <span class="material-icons">mic</span>
+        </button>
+        <input type="file" id="fileInput" hidden accept="image/*,.txt,.md,.js,.py,.html,.css,.json">
         <div class="input-wrapper">
-          <textarea 
-            id="promptInput" 
-            class="prompt-input" 
-            placeholder="Ask anything..." 
-            rows="1"
-          ></textarea>
+          <textarea id="promptInput" class="prompt-input" placeholder="Ask anything..." rows="1"></textarea>
         </div>
         <button id="sendBtn" class="icon-button send-btn" title="Send">
           <span class="material-icons">send</span>
@@ -225,4 +257,5 @@
 
   <script src="sidepanel.js"></script>
 </body>
+
 </html>
