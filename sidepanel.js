@@ -1,6 +1,11 @@
 // Chrome AI Sidebar - Main Application Logic
 // Integrates with Chrome's built-in AI APIs (Prompt API, Summarizer, etc.) and LM Studio
 
+// Configuration constants
+const GEMINI_OAUTH_CLIENT_ID = ''; // Configure your OAuth client ID here from Google Cloud Console
+const CONNECT_TIMEOUT_MS = 10000;
+const REQUEST_TIMEOUT_MS = 60000;
+
 class ChromeAIApp {
   constructor() {
     this.session = null;
@@ -266,7 +271,7 @@ class ChromeAIApp {
     // Test API with a simple request
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), CONNECT_TIMEOUT_MS);
 
       const headers = {
         'Content-Type': 'application/json'
@@ -324,7 +329,7 @@ class ChromeAIApp {
     // Test API key with a simple request
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), CONNECT_TIMEOUT_MS);
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -370,7 +375,7 @@ class ChromeAIApp {
     // Test API key with a simple request
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), CONNECT_TIMEOUT_MS);
 
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -655,19 +660,22 @@ class ChromeAIApp {
     const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      // Add authentication header based on method
+      if (this.geminiAuthMethod === 'oauth') {
+        headers['Authorization'] = `Bearer ${this.geminiOAuthToken}`;
+      } else {
+        headers['x-goog-api-key'] = this.geminiApiKey;
+      }
+      
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModel}:generateContent`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': this.geminiAuthMethod === 'oauth' 
-              ? undefined 
-              : this.geminiApiKey,
-            'Authorization': this.geminiAuthMethod === 'oauth' 
-              ? `Bearer ${this.geminiOAuthToken}` 
-              : undefined
-          },
+          headers: headers,
           body: JSON.stringify({
             contents: contents,
             generationConfig: {
@@ -712,9 +720,9 @@ class ChromeAIApp {
     }
   }
 
-  async handleOpenAIResponse(prompt, context, loadingMessage) {
-    // Build the messages array
-    const messages = [
+  // Helper method to build conversation messages with context
+  buildConversationMessages(prompt, context) {
+    return [
       ...this.messages.map(m => ({
         role: m.role,
         content: m.role === 'user' && m.context 
@@ -728,10 +736,15 @@ class ChromeAIApp {
           : prompt
       }
     ];
+  }
+
+  async handleOpenAIResponse(prompt, context, loadingMessage) {
+    // Build the messages array using helper
+    const messages = this.buildConversationMessages(prompt, context);
 
     // Set up timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -780,25 +793,12 @@ class ChromeAIApp {
   }
 
   async handleAnthropicResponse(prompt, context, loadingMessage) {
-    // Build the messages array
-    const messages = [
-      ...this.messages.map(m => ({
-        role: m.role,
-        content: m.role === 'user' && m.context 
-          ? `${m.content}\n\nPage Context: ${m.context.text.substring(0, this.MAX_CONTEXT_LENGTH)}`
-          : m.content
-      })),
-      {
-        role: 'user',
-        content: context 
-          ? `${prompt}\n\nPage Context from "${context.title}":\n${context.text.substring(0, this.MAX_CONTEXT_LENGTH)}`
-          : prompt
-      }
-    ];
+    // Build the messages array using helper
+    const messages = this.buildConversationMessages(prompt, context);
 
     // Set up timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -1181,15 +1181,14 @@ class ChromeAIApp {
   async handleGeminiOAuth() {
     try {
       const redirectUrl = chrome.identity.getRedirectURL();
-      const clientId = ''; // User needs to provide their OAuth client ID
       const authUrl = `https://accounts.google.com/o/oauth2/auth?` +
-        `client_id=${clientId}&` +
+        `client_id=${GEMINI_OAUTH_CLIENT_ID}&` +
         `response_type=token&` +
         `redirect_uri=${encodeURIComponent(redirectUrl)}&` +
         `scope=${encodeURIComponent('https://www.googleapis.com/auth/generative-language')}`;
 
-      if (!clientId) {
-        this.showStatus('OAuth client ID not configured. Please see documentation.', 'error');
+      if (!GEMINI_OAUTH_CLIENT_ID) {
+        this.showStatus('OAuth client ID not configured. Please set GEMINI_OAUTH_CLIENT_ID in sidepanel.js', 'error');
         return;
       }
 
