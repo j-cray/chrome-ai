@@ -212,11 +212,12 @@ class ChromeAIApp {
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModel}:generateContent?key=${this.geminiApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModel}:generateContent`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'x-goog-api-key': this.geminiApiKey
           },
           body: JSON.stringify({
             contents: [{
@@ -493,11 +494,12 @@ class ChromeAIApp {
 
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModel}:generateContent?key=${this.geminiApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModel}:generateContent`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'x-goog-api-key': this.geminiApiKey
           },
           body: JSON.stringify({
             contents: contents,
@@ -518,6 +520,12 @@ class ChromeAIApp {
       }
 
       const data = await response.json();
+      
+      // Safely access nested properties with null checks
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+        throw new Error('Unexpected response format from Gemini API');
+      }
+      
       const assistantResponse = data.candidates[0].content.parts[0].text;
 
       // Remove loading message and add response
