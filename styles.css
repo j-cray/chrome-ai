@@ -594,13 +594,42 @@ body {
 }
 
 #lmstudioSettings,
-#geminiSettings {
+#geminiSettings,
+#openaiSettings,
+#anthropicSettings {
   display: none;
 }
 
 #lmstudioSettings.active,
-#geminiSettings.active {
+#geminiSettings.active,
+#openaiSettings.active,
+#anthropicSettings.active {
   display: block;
+}
+
+.secondary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--md-sys-color-secondary);
+  color: var(--md-sys-color-on-secondary);
+  border: none;
+  border-radius: 24px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.secondary-button:hover {
+  opacity: 0.9;
+}
+
+.secondary-button:active {
+  opacity: 0.8;
 }
 
 .input-hint a {
