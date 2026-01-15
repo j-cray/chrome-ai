@@ -150,18 +150,24 @@ class ChromeAIApp {
   async initializeLMStudio() {
     // Test connection to LM Studio
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const response = await fetch(this.lmstudioUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          messages: [{ role: 'user', content: 'ping' }],
+          messages: [{ role: 'user', content: 'Hello' }],
           model: this.lmstudioModel || undefined,
           max_tokens: 10,
           stream: false
-        })
+        }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`LM Studio server returned ${response.status}: ${response.statusText}`);
@@ -178,6 +184,9 @@ class ChromeAIApp {
       setTimeout(() => this.hideStatus(), 3000);
 
     } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Connection to LM Studio timed out. Make sure LM Studio is running and the server is started.');
+      }
       throw new Error(`Failed to connect to LM Studio: ${error.message}. Make sure LM Studio is running and the server is started.`);
     }
   }
@@ -342,35 +351,50 @@ class ChromeAIApp {
 
     messages.push({ role: 'user', content: userMessage });
 
-    // Call LM Studio API
-    const response = await fetch(this.lmstudioUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        messages: messages,
-        model: this.lmstudioModel || undefined,
-        temperature: 0.8,
-        max_tokens: 2000,
-        stream: false
-      })
-    });
+    // Call LM Studio API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
-    if (!response.ok) {
-      throw new Error(`LM Studio API error: ${response.status} ${response.statusText}`);
+    try {
+      const response = await fetch(this.lmstudioUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages: messages,
+          model: this.lmstudioModel || undefined,
+          temperature: 0.8,
+          max_tokens: 2000,
+          stream: false
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`LM Studio API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const assistantResponse = data.choices[0].message.content;
+
+      // Remove loading message and add response
+      loadingMessage.remove();
+      this.addMessage('assistant', assistantResponse);
+
+      // Store in messages history
+      this.messages.push({ role: 'user', content: prompt, context });
+      this.messages.push({ role: 'assistant', content: assistantResponse });
+
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('Request to LM Studio timed out. The model may be taking too long to respond.');
+      }
+      throw error;
     }
-
-    const data = await response.json();
-    const assistantResponse = data.choices[0].message.content;
-
-    // Remove loading message and add response
-    loadingMessage.remove();
-    this.addMessage('assistant', assistantResponse);
-
-    // Store in messages history
-    this.messages.push({ role: 'user', content: prompt, context });
-    this.messages.push({ role: 'assistant', content: assistantResponse });
   }
 
   isSummarizationRequest(prompt) {
