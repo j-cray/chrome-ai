@@ -1,53 +1,121 @@
 # Implementation Progress - Extended AI Providers
 
-## Completed
-- ✅ Chrome theme integration (matches browser color scheme dynamically)
-- ✅ Added identity permission for OAuth
-- ✅ UI for OpenAI provider (API key + model selection)
-- ✅ UI for Anthropic provider (API key + model selection)
-- ✅ UI for Gemini OAuth option (alongside API key)
+## ✅ Completed (Commits 36d3f57, 5480eab, e505349)
 
-## In Progress
-These features require substantial backend implementation in sidepanel.js:
+### Chrome Theme Integration
+- ✅ theme.js module for dynamic color detection
+- ✅ Matches Chrome's light/dark mode automatically
+- ✅ Real-time theme updates on system preference changes
+- ✅ Chrome-native colors (not Material Design colors)
 
-### 1. OpenAI API Integration
-Needs implementation in sidepanel.js:
-- `initializeOpenAI()` method
-- `handleOpenAIResponse()` method
-- API endpoint: https://api.openai.com/v1/chat/completions
-- Models: GPT-4 Turbo, GPT-4, GPT-3.5 Turbo variants
+### UI Implementation
+- ✅ Settings panel UI for all 5 providers
+- ✅ OpenAI configuration (API key + model selection: GPT-4 Turbo, GPT-4, GPT-3.5)
+- ✅ Anthropic configuration (API key + model selection: Claude 3 Opus/Sonnet/Haiku, Claude 2.1)
+- ✅ Gemini OAuth/API key toggle UI
+- ✅ OAuth button and status indicators
+- ✅ CSS styling for all new settings sections
 
-### 2. Anthropic API Integration
-Needs implementation in sidepanel.js:
-- `initializeAnthropic()` method
-- `handleAnthropicResponse()` method
-- API endpoint: https://api.anthropic.com/v1/messages
-- Models: Claude 3 Opus, Sonnet, Haiku, Claude 2.1
+### Backend Implementation - Initialization
+- ✅ Updated DOM references for all new UI elements
+- ✅ Event listeners for new radio buttons and OAuth button
+- ✅ OpenAI initialization method with API key validation
+- ✅ Anthropic initialization method with API key validation
+- ✅ Configuration variables for all providers
 
-### 3. Google OAuth for Gemini
-Needs implementation in sidepanel.js:
-- OAuth flow using chrome.identity.launchWebAuthFlow()
-- Token storage and refresh
-- Switch between API key and OAuth auth methods
-- Support for Gemini Pro/Ultra plan access
+### Manifest Updates
+- ✅ Added `identity` permission for OAuth flows
+- ✅ OAuth2 configuration stub for Gemini
 
-### 4. Native Messaging Host
-Requires separate documentation:
-- Native app setup for OS-level features
-- Communication protocol between extension and native app
+## 🚧 In Progress (Needs Implementation)
+
+### 1. Response Handlers
+The following handler methods need to be added to sidepanel.js:
+
+**handleOpenAIResponse(prompt, context, loadingMessage)**
+- Endpoint: `https://api.openai.com/v1/chat/completions`
+- Authorization: `Bearer ${apiKey}` header
+- Request format: OpenAI chat completions API
+- Conversation history support
+- 60s timeout with AbortController
+
+**handleAnthropicResponse(prompt, context, loadingMessage)**
+- Endpoint: `https://api.anthropic.com/v1/messages`
+- Headers: `x-api-key` + `anthropic-version: 2023-06-01`
+- Request format: Anthropic messages API
+- Conversation history support
+- 60s timeout with AbortController
+
+### 2. Handle Send Message Updates
+Update `handleSendMessage()` method to route to:
+- OpenAI handler when aiMode === 'openai'
+- Anthropic handler when aiMode === 'anthropic'
+- Check for API keys before sending
+
+### 3. Google OAuth Implementation
+**handleGeminiOAuth()** method needed:
+```javascript
+async handleGeminiOAuth() {
+  const authUrl = 'https://accounts.google.com/o/oauth2/auth';
+  const clientId = 'YOUR_CLIENT_ID';
+  const redirectUrl = chrome.identity.getRedirectURL();
+  const scopes = ['https://www.googleapis.com/auth/generative-language'];
+  
+  // Use chrome.identity.launchWebAuthFlow()
+  // Store token in this.geminiOAuthToken
+  // Update UI status
+}
+```
+
+**toggleGeminiAuthMethod()** method:
+- Show/hide API key vs OAuth groups based on selection
+
+**Update initializeGeminiAPI()** to support OAuth:
+- Check `this.geminiAuthMethod`
+- Use OAuth token OR API key accordingly
+
+### 4. Settings Management Updates
+Extend `loadSettings()` and `saveSettings()` to include:
+- openaiApiKey, openaiModel
+- anthropicApiKey, anthropicModel
+- geminiAuthMethod, geminiOAuthToken
+
+Update `updateSettingsUI()` to toggle:
+- openaiSettings, anthropicSettings visibility
+- geminiApiKeyGroup / geminiOAuthGroup based on auth method
+
+### 5. Native Messaging Host Documentation
+Create `NATIVE_MESSAGING.md` with:
+- Architecture overview
+- Native host setup for Windows/Mac/Linux
+- Communication protocol
 - Security considerations
-- Installation instructions for Windows/Mac/Linux
+- Example implementations
 
-## Files Modified
-- manifest.json - Added identity permission and OAuth config
-- sidepanel.html - Added UI for OpenAI, Anthropic, Gemini OAuth
-- styles.css - Added styles for new settings sections
-- theme.js - NEW: Chrome theme detection and application
+## 📁 Files Modified
+- manifest.json - OAuth permissions
+- sidepanel.html - UI for 5 providers + OAuth
+- sidepanel.js - Initialization methods (partial)
+- styles.css - New provider styles
+- theme.js - NEW: Chrome theme detection
 
-## Next Steps
-1. Implement JavaScript handlers for all new providers
-2. Add OAuth flow for Gemini
-3. Create native messaging host documentation
-4. Update settings management to handle all new fields
-5. Test all providers end-to-end
-6. Update README with new provider documentation
+## 📊 Implementation Status: ~50% Complete
+
+**What Works:**
+- Chrome theme matching
+- UI for all providers
+- OpenAI/Anthropic initialization (API key validation)
+
+**What's Missing:**
+- Response handlers for OpenAI/Anthropic
+- OAuth flow implementation
+- Settings persistence for new providers
+- Message routing logic updates
+- Native messaging documentation
+
+## Next Immediate Steps (Priority Order)
+1. Add handleOpenAIResponse() and handleAnthropicResponse()
+2. Update handleSendMessage() routing
+3. Implement OAuth flow for Gemini
+4. Update settings load/save methods
+5. Create native messaging documentation
