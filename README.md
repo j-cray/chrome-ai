@@ -34,6 +34,16 @@ This extension requires **Chrome Canary** (version 127+) with experimental AI fe
    - Find "Optimization Guide On Device Model"
    - Click "Check for update" and wait for download to complete
 
+### For Gemini API Mode
+
+1. **Get API Key**: Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. **Create API Key**: Click "Create API Key" and copy it
+3. **Configure in Extension**: 
+   - Open the extension settings
+   - Select "Gemini API" mode
+   - Paste your API key
+   - Choose your preferred model (Gemini Pro, 1.5 Pro, etc.)
+
 ### For LM Studio Mode
 
 1. **Download LM Studio**: https://lmstudio.ai/

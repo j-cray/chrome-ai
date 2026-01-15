@@ -593,10 +593,21 @@ body {
   opacity: 0.8;
 }
 
-#lmstudioSettings {
+#lmstudioSettings,
+#geminiSettings {
   display: none;
 }
 
-#lmstudioSettings.active {
+#lmstudioSettings.active,
+#geminiSettings.active {
   display: block;
+}
+
+.input-hint a {
+  color: var(--md-sys-color-primary);
+  text-decoration: none;
+}
+
+.input-hint a:hover {
+  text-decoration: underline;
 }

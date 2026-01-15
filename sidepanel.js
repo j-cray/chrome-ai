@@ -12,10 +12,12 @@ class ChromeAIApp {
     // Configuration constants
     this.MAX_CONTEXT_LENGTH = 8000; // Maximum context length for AI queries
     
-    // AI mode: 'chrome' or 'lmstudio'
+    // AI mode: 'chrome', 'gemini', or 'lmstudio'
     this.aiMode = 'chrome';
     this.lmstudioUrl = 'http://localhost:1234/v1/chat/completions';
     this.lmstudioModel = '';
+    this.geminiApiKey = '';
+    this.geminiModel = 'gemini-pro';
     
     this.initializeApp();
   }
@@ -43,7 +45,11 @@ class ChromeAIApp {
       closeSettingsBtn: document.getElementById('closeSettingsBtn'),
       saveSettingsBtn: document.getElementById('saveSettingsBtn'),
       chromeModeRadio: document.getElementById('chromeModeRadio'),
+      geminiModeRadio: document.getElementById('geminiModeRadio'),
       lmstudioModeRadio: document.getElementById('lmstudioModeRadio'),
+      geminiSettings: document.getElementById('geminiSettings'),
+      geminiApiKey: document.getElementById('geminiApiKey'),
+      geminiModel: document.getElementById('geminiModel'),
       lmstudioSettings: document.getElementById('lmstudioSettings'),
       lmstudioUrl: document.getElementById('lmstudioUrl'),
       lmstudioModel: document.getElementById('lmstudioModel'),
@@ -83,6 +89,7 @@ class ChromeAIApp {
     
     // AI mode radio buttons
     this.elements.chromeModeRadio.addEventListener('change', () => this.updateSettingsUI());
+    this.elements.geminiModeRadio.addEventListener('change', () => this.updateSettingsUI());
     this.elements.lmstudioModeRadio.addEventListener('change', () => this.updateSettingsUI());
     
     // Close settings on backdrop click
@@ -100,6 +107,8 @@ class ChromeAIApp {
     try {
       if (this.aiMode === 'chrome') {
         await this.initializeChromeAI();
+      } else if (this.aiMode === 'gemini') {
+        await this.initializeGeminiAPI();
       } else if (this.aiMode === 'lmstudio') {
         await this.initializeLMStudio();
       }
@@ -191,6 +200,54 @@ class ChromeAIApp {
     }
   }
 
+  async initializeGeminiAPI() {
+    // Validate API key
+    if (!this.geminiApiKey) {
+      throw new Error('Gemini API key is required. Please configure it in settings.');
+    }
+
+    // Test API key with a simple request
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModel}:generateContent?key=${this.geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: 'Hello' }]
+            }]
+          }),
+          signal: controller.signal
+        }
+      );
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(`Gemini API error: ${error.error?.message || response.statusText}`);
+      }
+
+      this.showStatus('Gemini API connected!', 'success');
+      this.elements.modelName.textContent = this.geminiModel;
+      this.elements.sendBtn.disabled = false;
+      
+      setTimeout(() => this.hideStatus(), 3000);
+
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Connection to Gemini API timed out. Please check your internet connection.');
+      }
+      throw new Error(`Failed to connect to Gemini API: ${error.message}`);
+    }
+  }
+
   async initializeSummarizer() {
     try {
       if (window.ai && window.ai.summarizer) {
@@ -249,6 +306,11 @@ class ChromeAIApp {
       this.showStatus('Chrome AI not ready. Please check settings.', 'error');
       return;
     }
+    
+    if (this.aiMode === 'gemini' && !this.geminiApiKey) {
+      this.showStatus('Gemini API key not configured. Please check settings.', 'error');
+      return;
+    }
 
     // Clear input
     this.elements.promptInput.value = '';
@@ -277,6 +339,8 @@ class ChromeAIApp {
     try {
       if (this.aiMode === 'chrome') {
         await this.handleChromeAIResponse(prompt, context, loadingMessage);
+      } else if (this.aiMode === 'gemini') {
+        await this.handleGeminiAPIResponse(prompt, context, loadingMessage);
       } else if (this.aiMode === 'lmstudio') {
         await this.handleLMStudioResponse(prompt, context, loadingMessage);
       }
@@ -392,6 +456,82 @@ class ChromeAIApp {
       clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
         throw new Error('Request to LM Studio timed out. The model may be taking too long to respond.');
+      }
+      throw error;
+    }
+  }
+
+  async handleGeminiAPIResponse(prompt, context, loadingMessage) {
+    // Prepare conversation history for Gemini
+    const contents = [];
+    
+    // Add conversation history
+    for (const msg of this.messages) {
+      contents.push({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.content }]
+      });
+    }
+
+    // Add context if provided
+    let userMessage = prompt;
+    if (context && context.text) {
+      const contextText = context.text.length > this.MAX_CONTEXT_LENGTH 
+        ? context.text.substring(0, this.MAX_CONTEXT_LENGTH) + '...'
+        : context.text;
+      userMessage = `Context from page "${context.title}" (${context.url}):\n\n${contextText}\n\n---\n\nUser question: ${prompt}`;
+    }
+
+    contents.push({
+      role: 'user',
+      parts: [{ text: userMessage }]
+    });
+
+    // Call Gemini API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModel}:generateContent?key=${this.geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: contents,
+            generationConfig: {
+              temperature: 0.8,
+              maxOutputTokens: 2048
+            }
+          }),
+          signal: controller.signal
+        }
+      );
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(`Gemini API error: ${error.error?.message || response.statusText}`);
+      }
+
+      const data = await response.json();
+      const assistantResponse = data.candidates[0].content.parts[0].text;
+
+      // Remove loading message and add response
+      loadingMessage.remove();
+      this.addMessage('assistant', assistantResponse);
+
+      // Store in messages history
+      this.messages.push({ role: 'user', content: prompt, context });
+      this.messages.push({ role: 'assistant', content: assistantResponse });
+
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('Request to Gemini API timed out. Please check your internet connection.');
       }
       throw error;
     }
@@ -548,7 +688,13 @@ class ChromeAIApp {
 
   // Settings management
   async loadSettings() {
-    const settings = await chrome.storage.local.get(['aiMode', 'lmstudioUrl', 'lmstudioModel']);
+    const settings = await chrome.storage.local.get([
+      'aiMode', 
+      'lmstudioUrl', 
+      'lmstudioModel',
+      'geminiApiKey',
+      'geminiModel'
+    ]);
     
     if (settings.aiMode) {
       this.aiMode = settings.aiMode;
@@ -559,35 +705,53 @@ class ChromeAIApp {
     if (settings.lmstudioModel) {
       this.lmstudioModel = settings.lmstudioModel;
     }
+    if (settings.geminiApiKey) {
+      this.geminiApiKey = settings.geminiApiKey;
+    }
+    if (settings.geminiModel) {
+      this.geminiModel = settings.geminiModel;
+    }
 
     // Update UI
     if (this.aiMode === 'chrome') {
       this.elements.chromeModeRadio.checked = true;
+    } else if (this.aiMode === 'gemini') {
+      this.elements.geminiModeRadio.checked = true;
     } else {
       this.elements.lmstudioModeRadio.checked = true;
     }
     this.elements.lmstudioUrl.value = this.lmstudioUrl;
     this.elements.lmstudioModel.value = this.lmstudioModel;
+    this.elements.geminiApiKey.value = this.geminiApiKey;
+    this.elements.geminiModel.value = this.geminiModel;
     this.updateSettingsUI();
   }
 
   async saveSettings() {
-    const newMode = this.elements.chromeModeRadio.checked ? 'chrome' : 'lmstudio';
-    const newUrl = this.elements.lmstudioUrl.value;
-    const newModel = this.elements.lmstudioModel.value;
+    const newMode = this.elements.chromeModeRadio.checked ? 'chrome' 
+                  : this.elements.geminiModeRadio.checked ? 'gemini'
+                  : 'lmstudio';
+    const newLmUrl = this.elements.lmstudioUrl.value;
+    const newLmModel = this.elements.lmstudioModel.value;
+    const newGeminiKey = this.elements.geminiApiKey.value;
+    const newGeminiModel = this.elements.geminiModel.value;
 
     // Save to storage
     await chrome.storage.local.set({
       aiMode: newMode,
-      lmstudioUrl: newUrl,
-      lmstudioModel: newModel
+      lmstudioUrl: newLmUrl,
+      lmstudioModel: newLmModel,
+      geminiApiKey: newGeminiKey,
+      geminiModel: newGeminiModel
     });
 
     // Update local state
     const modeChanged = this.aiMode !== newMode;
     this.aiMode = newMode;
-    this.lmstudioUrl = newUrl;
-    this.lmstudioModel = newModel;
+    this.lmstudioUrl = newLmUrl;
+    this.lmstudioModel = newLmModel;
+    this.geminiApiKey = newGeminiKey;
+    this.geminiModel = newGeminiModel;
 
     // Reinitialize AI if mode changed
     if (modeChanged) {
@@ -611,9 +775,14 @@ class ChromeAIApp {
   }
 
   updateSettingsUI() {
-    if (this.elements.lmstudioModeRadio.checked) {
+    if (this.elements.geminiModeRadio.checked) {
+      this.elements.geminiSettings.classList.add('active');
+      this.elements.lmstudioSettings.classList.remove('active');
+    } else if (this.elements.lmstudioModeRadio.checked) {
       this.elements.lmstudioSettings.classList.add('active');
+      this.elements.geminiSettings.classList.remove('active');
     } else {
+      this.elements.geminiSettings.classList.remove('active');
       this.elements.lmstudioSettings.classList.remove('active');
     }
   }
