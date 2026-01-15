@@ -252,24 +252,38 @@ class ChromeAIApp {
   }
 
   async initializeGeminiAPI() {
-    // Validate API key
-    if (!this.geminiApiKey) {
-      throw new Error('Gemini API key is required. Please configure it in settings.');
+    // Validate authentication
+    if (this.geminiAuthMethod === 'oauth') {
+      if (!this.geminiOAuthToken) {
+        throw new Error('Gemini OAuth not configured. Please sign in via settings.');
+      }
+    } else {
+      if (!this.geminiApiKey) {
+        throw new Error('Gemini API key is required. Please configure it in settings.');
+      }
     }
 
-    // Test API key with a simple request
+    // Test API with a simple request
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+
+      // Add authentication header based on method
+      if (this.geminiAuthMethod === 'oauth') {
+        headers['Authorization'] = `Bearer ${this.geminiOAuthToken}`;
+      } else {
+        headers['x-goog-api-key'] = this.geminiApiKey;
+      }
 
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModel}:generateContent`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': this.geminiApiKey
-          },
+          headers: headers,
           body: JSON.stringify({
             contents: [{
               parts: [{ text: 'Hello' }]
@@ -286,7 +300,8 @@ class ChromeAIApp {
         throw new Error(`Gemini API error: ${error.error?.message || response.statusText}`);
       }
 
-      this.showStatus('Gemini API connected!', 'success');
+      const authType = this.geminiAuthMethod === 'oauth' ? 'OAuth' : 'API Key';
+      this.showStatus(`Gemini API connected (${authType})!`, 'success');
       this.elements.modelName.textContent = this.geminiModel;
       this.elements.sendBtn.disabled = false;
       
@@ -485,6 +500,10 @@ class ChromeAIApp {
         await this.handleChromeAIResponse(prompt, context, loadingMessage);
       } else if (this.aiMode === 'gemini') {
         await this.handleGeminiAPIResponse(prompt, context, loadingMessage);
+      } else if (this.aiMode === 'openai') {
+        await this.handleOpenAIResponse(prompt, context, loadingMessage);
+      } else if (this.aiMode === 'anthropic') {
+        await this.handleAnthropicResponse(prompt, context, loadingMessage);
       } else if (this.aiMode === 'lmstudio') {
         await this.handleLMStudioResponse(prompt, context, loadingMessage);
       }
@@ -642,7 +661,12 @@ class ChromeAIApp {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-goog-api-key': this.geminiApiKey
+            'x-goog-api-key': this.geminiAuthMethod === 'oauth' 
+              ? undefined 
+              : this.geminiApiKey,
+            'Authorization': this.geminiAuthMethod === 'oauth' 
+              ? `Bearer ${this.geminiOAuthToken}` 
+              : undefined
           },
           body: JSON.stringify({
             contents: contents,
@@ -683,6 +707,141 @@ class ChromeAIApp {
       clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
         throw new Error('Request to Gemini API timed out. Please check your internet connection.');
+      }
+      throw error;
+    }
+  }
+
+  async handleOpenAIResponse(prompt, context, loadingMessage) {
+    // Build the messages array
+    const messages = [
+      ...this.messages.map(m => ({
+        role: m.role,
+        content: m.role === 'user' && m.context 
+          ? `${m.content}\n\nPage Context: ${m.context.text.substring(0, this.MAX_CONTEXT_LENGTH)}`
+          : m.content
+      })),
+      {
+        role: 'user',
+        content: context 
+          ? `${prompt}\n\nPage Context from "${context.title}":\n${context.text.substring(0, this.MAX_CONTEXT_LENGTH)}`
+          : prompt
+      }
+    ];
+
+    // Set up timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.openaiApiKey}`
+        },
+        body: JSON.stringify({
+          model: this.openaiModel,
+          messages: messages,
+          temperature: 0.8
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(`OpenAI API error: ${error.error?.message || response.statusText}`);
+      }
+
+      const data = await response.json();
+      const assistantResponse = data.choices?.[0]?.message?.content;
+
+      if (!assistantResponse) {
+        throw new Error('No response from OpenAI API');
+      }
+
+      // Remove loading message and add response
+      loadingMessage.remove();
+      this.addMessage('assistant', assistantResponse);
+
+      // Store in messages history
+      this.messages.push({ role: 'user', content: prompt, context });
+      this.messages.push({ role: 'assistant', content: assistantResponse });
+
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('Request to OpenAI timed out. Please check your internet connection.');
+      }
+      throw error;
+    }
+  }
+
+  async handleAnthropicResponse(prompt, context, loadingMessage) {
+    // Build the messages array
+    const messages = [
+      ...this.messages.map(m => ({
+        role: m.role,
+        content: m.role === 'user' && m.context 
+          ? `${m.content}\n\nPage Context: ${m.context.text.substring(0, this.MAX_CONTEXT_LENGTH)}`
+          : m.content
+      })),
+      {
+        role: 'user',
+        content: context 
+          ? `${prompt}\n\nPage Context from "${context.title}":\n${context.text.substring(0, this.MAX_CONTEXT_LENGTH)}`
+          : prompt
+      }
+    ];
+
+    // Set up timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.anthropicApiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: this.anthropicModel,
+          messages: messages,
+          max_tokens: 4096
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(`Anthropic API error: ${error.error?.message || response.statusText}`);
+      }
+
+      const data = await response.json();
+      const assistantResponse = data.content?.[0]?.text;
+
+      if (!assistantResponse) {
+        throw new Error('No response from Anthropic API');
+      }
+
+      // Remove loading message and add response
+      loadingMessage.remove();
+      this.addMessage('assistant', assistantResponse);
+
+      // Store in messages history
+      this.messages.push({ role: 'user', content: prompt, context });
+      this.messages.push({ role: 'assistant', content: assistantResponse });
+
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('Request to Anthropic timed out. Please check your internet connection.');
       }
       throw error;
     }
@@ -844,7 +1003,13 @@ class ChromeAIApp {
       'lmstudioUrl', 
       'lmstudioModel',
       'geminiApiKey',
-      'geminiModel'
+      'geminiModel',
+      'geminiAuthMethod',
+      'geminiOAuthToken',
+      'openaiApiKey',
+      'openaiModel',
+      'anthropicApiKey',
+      'anthropicModel'
     ]);
     
     if (settings.aiMode) {
@@ -862,30 +1027,78 @@ class ChromeAIApp {
     if (settings.geminiModel) {
       this.geminiModel = settings.geminiModel;
     }
+    if (settings.geminiAuthMethod) {
+      this.geminiAuthMethod = settings.geminiAuthMethod;
+    }
+    if (settings.geminiOAuthToken) {
+      this.geminiOAuthToken = settings.geminiOAuthToken;
+    }
+    if (settings.openaiApiKey) {
+      this.openaiApiKey = settings.openaiApiKey;
+    }
+    if (settings.openaiModel) {
+      this.openaiModel = settings.openaiModel;
+    }
+    if (settings.anthropicApiKey) {
+      this.anthropicApiKey = settings.anthropicApiKey;
+    }
+    if (settings.anthropicModel) {
+      this.anthropicModel = settings.anthropicModel;
+    }
 
     // Update UI
     if (this.aiMode === 'chrome') {
       this.elements.chromeModeRadio.checked = true;
     } else if (this.aiMode === 'gemini') {
       this.elements.geminiModeRadio.checked = true;
+    } else if (this.aiMode === 'openai') {
+      this.elements.openaiModeRadio.checked = true;
+    } else if (this.aiMode === 'anthropic') {
+      this.elements.anthropicModeRadio.checked = true;
     } else {
       this.elements.lmstudioModeRadio.checked = true;
     }
+    
+    // Update LM Studio settings
     this.elements.lmstudioUrl.value = this.lmstudioUrl;
     this.elements.lmstudioModel.value = this.lmstudioModel;
+    
+    // Update Gemini settings
     this.elements.geminiApiKey.value = this.geminiApiKey;
     this.elements.geminiModel.value = this.geminiModel;
+    this.elements.geminiAuthMethod.value = this.geminiAuthMethod;
+    if (this.geminiOAuthToken) {
+      this.elements.geminiOAuthStatus.textContent = '✓ Signed in';
+      this.elements.geminiOAuthStatus.style.color = 'var(--md-sys-color-primary)';
+    }
+    
+    // Update OpenAI settings
+    this.elements.openaiApiKey.value = this.openaiApiKey;
+    this.elements.openaiModel.value = this.openaiModel;
+    
+    // Update Anthropic settings
+    this.elements.anthropicApiKey.value = this.anthropicApiKey;
+    this.elements.anthropicModel.value = this.anthropicModel;
+    
     this.updateSettingsUI();
+    this.toggleGeminiAuthMethod();
   }
 
   async saveSettings() {
     const newMode = this.elements.chromeModeRadio.checked ? 'chrome' 
                   : this.elements.geminiModeRadio.checked ? 'gemini'
+                  : this.elements.openaiModeRadio.checked ? 'openai'
+                  : this.elements.anthropicModeRadio.checked ? 'anthropic'
                   : 'lmstudio';
     const newLmUrl = this.elements.lmstudioUrl.value;
     const newLmModel = this.elements.lmstudioModel.value;
     const newGeminiKey = this.elements.geminiApiKey.value;
     const newGeminiModel = this.elements.geminiModel.value;
+    const newGeminiAuthMethod = this.elements.geminiAuthMethod.value;
+    const newOpenaiKey = this.elements.openaiApiKey.value;
+    const newOpenaiModel = this.elements.openaiModel.value;
+    const newAnthropicKey = this.elements.anthropicApiKey.value;
+    const newAnthropicModel = this.elements.anthropicModel.value;
 
     // Save to storage
     await chrome.storage.local.set({
@@ -893,7 +1106,13 @@ class ChromeAIApp {
       lmstudioUrl: newLmUrl,
       lmstudioModel: newLmModel,
       geminiApiKey: newGeminiKey,
-      geminiModel: newGeminiModel
+      geminiModel: newGeminiModel,
+      geminiAuthMethod: newGeminiAuthMethod,
+      geminiOAuthToken: this.geminiOAuthToken,
+      openaiApiKey: newOpenaiKey,
+      openaiModel: newOpenaiModel,
+      anthropicApiKey: newAnthropicKey,
+      anthropicModel: newAnthropicModel
     });
 
     // Update local state
@@ -903,6 +1122,11 @@ class ChromeAIApp {
     this.lmstudioModel = newLmModel;
     this.geminiApiKey = newGeminiKey;
     this.geminiModel = newGeminiModel;
+    this.geminiAuthMethod = newGeminiAuthMethod;
+    this.openaiApiKey = newOpenaiKey;
+    this.openaiModel = newOpenaiModel;
+    this.anthropicApiKey = newAnthropicKey;
+    this.anthropicModel = newAnthropicModel;
 
     // Reinitialize AI if mode changed
     if (modeChanged) {
@@ -926,15 +1150,69 @@ class ChromeAIApp {
   }
 
   updateSettingsUI() {
+    // Hide all settings sections first
+    this.elements.geminiSettings.classList.remove('active');
+    this.elements.openaiSettings.classList.remove('active');
+    this.elements.anthropicSettings.classList.remove('active');
+    this.elements.lmstudioSettings.classList.remove('active');
+    
+    // Show the relevant section
     if (this.elements.geminiModeRadio.checked) {
       this.elements.geminiSettings.classList.add('active');
-      this.elements.lmstudioSettings.classList.remove('active');
+    } else if (this.elements.openaiModeRadio.checked) {
+      this.elements.openaiSettings.classList.add('active');
+    } else if (this.elements.anthropicModeRadio.checked) {
+      this.elements.anthropicSettings.classList.add('active');
     } else if (this.elements.lmstudioModeRadio.checked) {
       this.elements.lmstudioSettings.classList.add('active');
-      this.elements.geminiSettings.classList.remove('active');
+    }
+  }
+
+  toggleGeminiAuthMethod() {
+    if (this.elements.geminiAuthMethod.value === 'oauth') {
+      this.elements.geminiApiKeyGroup.style.display = 'none';
+      this.elements.geminiOAuthGroup.style.display = 'block';
     } else {
-      this.elements.geminiSettings.classList.remove('active');
-      this.elements.lmstudioSettings.classList.remove('active');
+      this.elements.geminiApiKeyGroup.style.display = 'block';
+      this.elements.geminiOAuthGroup.style.display = 'none';
+    }
+  }
+
+  async handleGeminiOAuth() {
+    try {
+      const redirectUrl = chrome.identity.getRedirectURL();
+      const clientId = ''; // User needs to provide their OAuth client ID
+      const authUrl = `https://accounts.google.com/o/oauth2/auth?` +
+        `client_id=${clientId}&` +
+        `response_type=token&` +
+        `redirect_uri=${encodeURIComponent(redirectUrl)}&` +
+        `scope=${encodeURIComponent('https://www.googleapis.com/auth/generative-language')}`;
+
+      if (!clientId) {
+        this.showStatus('OAuth client ID not configured. Please see documentation.', 'error');
+        return;
+      }
+
+      const responseUrl = await chrome.identity.launchWebAuthFlow({
+        url: authUrl,
+        interactive: true
+      });
+
+      // Extract access token from response URL
+      const match = responseUrl.match(/access_token=([^&]+)/);
+      if (match) {
+        this.geminiOAuthToken = match[1];
+        await chrome.storage.local.set({ geminiOAuthToken: this.geminiOAuthToken });
+        this.elements.geminiOAuthStatus.textContent = '✓ Signed in';
+        this.elements.geminiOAuthStatus.style.color = 'var(--md-sys-color-primary)';
+        this.showStatus('Successfully authenticated with Google', 'success');
+        setTimeout(() => this.hideStatus(), 3000);
+      } else {
+        throw new Error('Failed to obtain access token');
+      }
+    } catch (error) {
+      console.error('OAuth error:', error);
+      this.showStatus(`OAuth failed: ${error.message}`, 'error');
     }
   }
 }
