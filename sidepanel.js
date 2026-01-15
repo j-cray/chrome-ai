@@ -2,7 +2,7 @@
 // Integrates with Chrome's built-in AI APIs (Prompt API, Summarizer, etc.) and LM Studio
 
 // Configuration constants
-const GEMINI_OAUTH_CLIENT_ID = ''; // Configure your OAuth client ID here from Google Cloud Console
+const GEMINI_OAUTH_CLIENT_ID = '397296783328-pufhj0l54grfg9d25227dk4859t3au77.apps.googleusercontent.com'; // Configure your OAuth client ID here from Google Cloud Console
 const CONNECT_TIMEOUT_MS = 10000;
 const REQUEST_TIMEOUT_MS = 60000;
 
@@ -13,31 +13,31 @@ class ChromeAIApp {
     this.includeContext = false;
     this.messages = [];
     this.performanceMetrics = { lastResponseTime: 0 };
-    
+
     // Configuration constants
     this.MAX_CONTEXT_LENGTH = 8000; // Maximum context length for AI queries
-    
+
     // AI mode: 'chrome', 'gemini', 'openai', 'anthropic', or 'lmstudio'
     this.aiMode = 'chrome';
-    
+
     // LM Studio config
     this.lmstudioUrl = 'http://localhost:1234/v1/chat/completions';
     this.lmstudioModel = '';
-    
+
     // Gemini config
     this.geminiApiKey = '';
     this.geminiModel = 'gemini-pro';
     this.geminiAuthMethod = 'apikey'; // 'apikey' or 'oauth'
     this.geminiOAuthToken = null;
-    
+
     // OpenAI config
     this.openaiApiKey = '';
     this.openaiModel = 'gpt-4-turbo-preview';
-    
+
     // Anthropic config
     this.anthropicApiKey = '';
     this.anthropicModel = 'claude-3-opus-20240229';
-    
+
     this.initializeApp();
   }
 
@@ -63,14 +63,14 @@ class ChromeAIApp {
       settingsPanel: document.getElementById('settingsPanel'),
       closeSettingsBtn: document.getElementById('closeSettingsBtn'),
       saveSettingsBtn: document.getElementById('saveSettingsBtn'),
-      
+
       // AI mode radio buttons
       chromeModeRadio: document.getElementById('chromeModeRadio'),
       geminiModeRadio: document.getElementById('geminiModeRadio'),
       openaiModeRadio: document.getElementById('openaiModeRadio'),
       anthropicModeRadio: document.getElementById('anthropicModeRadio'),
       lmstudioModeRadio: document.getElementById('lmstudioModeRadio'),
-      
+
       // Gemini settings
       geminiSettings: document.getElementById('geminiSettings'),
       geminiAuthMethod: document.getElementById('geminiAuthMethod'),
@@ -80,22 +80,22 @@ class ChromeAIApp {
       geminiOAuthBtn: document.getElementById('geminiOAuthBtn'),
       geminiOAuthStatus: document.getElementById('geminiOAuthStatus'),
       geminiModel: document.getElementById('geminiModel'),
-      
+
       // OpenAI settings
       openaiSettings: document.getElementById('openaiSettings'),
       openaiApiKey: document.getElementById('openaiApiKey'),
       openaiModel: document.getElementById('openaiModel'),
-      
+
       // Anthropic settings
       anthropicSettings: document.getElementById('anthropicSettings'),
       anthropicApiKey: document.getElementById('anthropicApiKey'),
       anthropicModel: document.getElementById('anthropicModel'),
-      
+
       // LM Studio settings
       lmstudioSettings: document.getElementById('lmstudioSettings'),
       lmstudioUrl: document.getElementById('lmstudioUrl'),
       lmstudioModel: document.getElementById('lmstudioModel'),
-      
+
       // Status and info
       statusBar: document.getElementById('statusBar'),
       statusIcon: document.getElementById('statusIcon'),
@@ -108,7 +108,7 @@ class ChromeAIApp {
   setupEventListeners() {
     // Send message on button click
     this.elements.sendBtn.addEventListener('click', () => this.handleSendMessage());
-    
+
     // Send message on Enter (Shift+Enter for new line)
     this.elements.promptInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -130,20 +130,20 @@ class ChromeAIApp {
     this.elements.settingsBtn.addEventListener('click', () => this.openSettings());
     this.elements.closeSettingsBtn.addEventListener('click', () => this.closeSettings());
     this.elements.saveSettingsBtn.addEventListener('click', () => this.saveSettings());
-    
+
     // AI mode radio buttons
     this.elements.chromeModeRadio.addEventListener('change', () => this.updateSettingsUI());
     this.elements.geminiModeRadio.addEventListener('change', () => this.updateSettingsUI());
     this.elements.openaiModeRadio.addEventListener('change', () => this.updateSettingsUI());
     this.elements.anthropicModeRadio.addEventListener('change', () => this.updateSettingsUI());
     this.elements.lmstudioModeRadio.addEventListener('change', () => this.updateSettingsUI());
-    
+
     // Gemini auth method toggle
     this.elements.geminiAuthMethod.addEventListener('change', () => this.toggleGeminiAuthMethod());
-    
+
     // OAuth button
     this.elements.geminiOAuthBtn.addEventListener('click', () => this.handleGeminiOAuth());
-    
+
     // Close settings on backdrop click
     this.elements.settingsPanel.addEventListener('click', (e) => {
       if (e.target === this.elements.settingsPanel) {
@@ -207,7 +207,7 @@ class ChromeAIApp {
     this.showStatus('Chrome AI ready! Start chatting below.', 'success');
     this.elements.modelName.textContent = 'Gemini Nano';
     this.elements.sendBtn.disabled = false;
-    
+
     // Auto-hide status after 3 seconds
     setTimeout(() => this.hideStatus(), 3000);
   }
@@ -244,7 +244,7 @@ class ChromeAIApp {
       this.showStatus('LM Studio connected!', 'success');
       this.elements.modelName.textContent = modelName;
       this.elements.sendBtn.disabled = false;
-      
+
       // Auto-hide status after 3 seconds
       setTimeout(() => this.hideStatus(), 3000);
 
@@ -309,7 +309,7 @@ class ChromeAIApp {
       this.showStatus(`Gemini API connected (${authType})!`, 'success');
       this.elements.modelName.textContent = this.geminiModel;
       this.elements.sendBtn.disabled = false;
-      
+
       setTimeout(() => this.hideStatus(), 3000);
 
     } catch (error) {
@@ -355,7 +355,7 @@ class ChromeAIApp {
       this.showStatus('OpenAI connected!', 'success');
       this.elements.modelName.textContent = this.openaiModel;
       this.elements.sendBtn.disabled = false;
-      
+
       setTimeout(() => this.hideStatus(), 3000);
 
     } catch (error) {
@@ -402,7 +402,7 @@ class ChromeAIApp {
       this.showStatus('Anthropic connected!', 'success');
       this.elements.modelName.textContent = this.anthropicModel;
       this.elements.sendBtn.disabled = false;
-      
+
       setTimeout(() => this.hideStatus(), 3000);
 
     } catch (error) {
@@ -436,10 +436,10 @@ class ChromeAIApp {
     if (result.pendingPrompt) {
       this.elements.promptInput.value = result.pendingPrompt;
       this.autoResizeTextarea();
-      
+
       // Clear pending prompt
       await chrome.storage.local.remove(['pendingPrompt', 'sourceUrl']);
-      
+
       // Auto-focus and optionally auto-send
       this.elements.promptInput.focus();
     }
@@ -454,7 +454,7 @@ class ChromeAIApp {
   toggleContext() {
     this.includeContext = !this.includeContext;
     this.elements.contextBtn.classList.toggle('active', this.includeContext);
-    
+
     if (this.includeContext) {
       this.showStatus('Page context will be included in next message', 'info');
       setTimeout(() => this.hideStatus(), 2000);
@@ -464,13 +464,13 @@ class ChromeAIApp {
   async handleSendMessage() {
     const prompt = this.elements.promptInput.value.trim();
     if (!prompt) return;
-    
+
     // Check if AI is ready
     if (this.aiMode === 'chrome' && !this.session) {
       this.showStatus('Chrome AI not ready. Please check settings.', 'error');
       return;
     }
-    
+
     if (this.aiMode === 'gemini' && !this.geminiApiKey) {
       this.showStatus('Gemini API key not configured. Please check settings.', 'error');
       return;
@@ -529,7 +529,7 @@ class ChromeAIApp {
   async handleChromeAIResponse(prompt, context, loadingMessage) {
     // Check if this is a summarization request
     const isSummarizationRequest = this.isSummarizationRequest(prompt);
-    
+
     if (isSummarizationRequest && this.summarizer && context && context.text) {
       await this.handleSummarization(context.text, loadingMessage);
     } else {
@@ -537,10 +537,10 @@ class ChromeAIApp {
       let fullPrompt = prompt;
       if (context && context.text) {
         // Optimize context by truncating if too long
-        const contextText = context.text.length > this.MAX_CONTEXT_LENGTH 
+        const contextText = context.text.length > this.MAX_CONTEXT_LENGTH
           ? context.text.substring(0, this.MAX_CONTEXT_LENGTH) + '...'
           : context.text;
-        
+
         fullPrompt = `Context from page "${context.title}" (${context.url}):\n\n${contextText}\n\n---\n\nUser question: ${prompt}`;
       }
 
@@ -567,15 +567,15 @@ class ChromeAIApp {
 
   async handleLMStudioResponse(prompt, context, loadingMessage) {
     // Prepare messages array
-    const messages = [...this.messages.map(m => ({ 
-      role: m.role === 'user' ? 'user' : 'assistant', 
-      content: m.content 
+    const messages = [...this.messages.map(m => ({
+      role: m.role === 'user' ? 'user' : 'assistant',
+      content: m.content
     }))];
 
     // Add context if provided
     let userMessage = prompt;
     if (context && context.text) {
-      const contextText = context.text.length > this.MAX_CONTEXT_LENGTH 
+      const contextText = context.text.length > this.MAX_CONTEXT_LENGTH
         ? context.text.substring(0, this.MAX_CONTEXT_LENGTH) + '...'
         : context.text;
       userMessage = `Context from page "${context.title}" (${context.url}):\n\n${contextText}\n\n---\n\nUser question: ${prompt}`;
@@ -632,7 +632,7 @@ class ChromeAIApp {
   async handleGeminiAPIResponse(prompt, context, loadingMessage) {
     // Prepare conversation history for Gemini
     const contents = [];
-    
+
     // Add conversation history
     for (const msg of this.messages) {
       contents.push({
@@ -644,7 +644,7 @@ class ChromeAIApp {
     // Add context if provided
     let userMessage = prompt;
     if (context && context.text) {
-      const contextText = context.text.length > this.MAX_CONTEXT_LENGTH 
+      const contextText = context.text.length > this.MAX_CONTEXT_LENGTH
         ? context.text.substring(0, this.MAX_CONTEXT_LENGTH) + '...'
         : context.text;
       userMessage = `Context from page "${context.title}" (${context.url}):\n\n${contextText}\n\n---\n\nUser question: ${prompt}`;
@@ -663,14 +663,14 @@ class ChromeAIApp {
       const headers = {
         'Content-Type': 'application/json'
       };
-      
+
       // Add authentication header based on method
       if (this.geminiAuthMethod === 'oauth') {
         headers['Authorization'] = `Bearer ${this.geminiOAuthToken}`;
       } else {
         headers['x-goog-api-key'] = this.geminiApiKey;
       }
-      
+
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModel}:generateContent`,
         {
@@ -695,12 +695,12 @@ class ChromeAIApp {
       }
 
       const data = await response.json();
-      
+
       // Safely access nested properties with null checks
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
         throw new Error('Unexpected response format from Gemini API');
       }
-      
+
       const assistantResponse = data.candidates[0].content.parts[0].text;
 
       // Remove loading message and add response
@@ -725,13 +725,13 @@ class ChromeAIApp {
     return [
       ...this.messages.map(m => ({
         role: m.role,
-        content: m.role === 'user' && m.context 
+        content: m.role === 'user' && m.context
           ? `${m.content}\n\nPage Context: ${m.context.text.substring(0, this.MAX_CONTEXT_LENGTH)}`
           : m.content
       })),
       {
         role: 'user',
-        content: context 
+        content: context
           ? `${prompt}\n\nPage Context from "${context.title}":\n${context.text.substring(0, this.MAX_CONTEXT_LENGTH)}`
           : prompt
       }
@@ -858,7 +858,7 @@ class ChromeAIApp {
       const summary = await this.summarizer.summarize(text);
       loadingMessage.remove();
       this.addMessage('assistant', `📝 Summary:\n\n${summary}`);
-      
+
       this.messages.push({ role: 'user', content: 'Summarize this page' });
       this.messages.push({ role: 'assistant', content: summary });
     } catch (error) {
@@ -931,7 +931,7 @@ class ChromeAIApp {
 
     const messageText = document.createElement('div');
     messageText.className = 'message-text';
-    
+
     const typingIndicator = document.createElement('div');
     typingIndicator.className = 'typing-indicator';
     for (let i = 0; i < 3; i++) {
@@ -939,7 +939,7 @@ class ChromeAIApp {
       dot.className = 'typing-dot';
       typingIndicator.appendChild(dot);
     }
-    
+
     messageText.appendChild(typingIndicator);
     content.appendChild(messageText);
 
@@ -961,7 +961,7 @@ class ChromeAIApp {
   showStatus(message, type = 'info') {
     this.elements.statusText.textContent = message;
     this.elements.statusBar.classList.remove('error');
-    
+
     if (type === 'error') {
       this.elements.statusBar.classList.add('error');
       this.elements.statusIcon.textContent = 'error';
@@ -970,7 +970,7 @@ class ChromeAIApp {
     } else {
       this.elements.statusIcon.textContent = 'info';
     }
-    
+
     this.elements.statusBar.classList.add('active');
   }
 
@@ -999,8 +999,8 @@ class ChromeAIApp {
   // Settings management
   async loadSettings() {
     const settings = await chrome.storage.local.get([
-      'aiMode', 
-      'lmstudioUrl', 
+      'aiMode',
+      'lmstudioUrl',
       'lmstudioModel',
       'geminiApiKey',
       'geminiModel',
@@ -1011,7 +1011,7 @@ class ChromeAIApp {
       'anthropicApiKey',
       'anthropicModel'
     ]);
-    
+
     if (settings.aiMode) {
       this.aiMode = settings.aiMode;
     }
@@ -1058,11 +1058,11 @@ class ChromeAIApp {
     } else {
       this.elements.lmstudioModeRadio.checked = true;
     }
-    
+
     // Update LM Studio settings
     this.elements.lmstudioUrl.value = this.lmstudioUrl;
     this.elements.lmstudioModel.value = this.lmstudioModel;
-    
+
     // Update Gemini settings
     this.elements.geminiApiKey.value = this.geminiApiKey;
     this.elements.geminiModel.value = this.geminiModel;
@@ -1071,21 +1071,21 @@ class ChromeAIApp {
       this.elements.geminiOAuthStatus.textContent = '✓ Signed in';
       this.elements.geminiOAuthStatus.style.color = 'var(--md-sys-color-primary)';
     }
-    
+
     // Update OpenAI settings
     this.elements.openaiApiKey.value = this.openaiApiKey;
     this.elements.openaiModel.value = this.openaiModel;
-    
+
     // Update Anthropic settings
     this.elements.anthropicApiKey.value = this.anthropicApiKey;
     this.elements.anthropicModel.value = this.anthropicModel;
-    
+
     this.updateSettingsUI();
     this.toggleGeminiAuthMethod();
   }
 
   async saveSettings() {
-    const newMode = this.elements.chromeModeRadio.checked ? 'chrome' 
+    const newMode = this.elements.chromeModeRadio.checked ? 'chrome'
                   : this.elements.geminiModeRadio.checked ? 'gemini'
                   : this.elements.openaiModeRadio.checked ? 'openai'
                   : this.elements.anthropicModeRadio.checked ? 'anthropic'
@@ -1155,7 +1155,7 @@ class ChromeAIApp {
     this.elements.openaiSettings.classList.remove('active');
     this.elements.anthropicSettings.classList.remove('active');
     this.elements.lmstudioSettings.classList.remove('active');
-    
+
     // Show the relevant section
     if (this.elements.geminiModeRadio.checked) {
       this.elements.geminiSettings.classList.add('active');
