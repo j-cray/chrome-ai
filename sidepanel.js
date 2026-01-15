@@ -1,5 +1,5 @@
 // Chrome AI Sidebar - Main Application Logic
-// Integrates with Chrome's built-in AI APIs (Prompt API, Summarizer, etc.)
+// Integrates with Chrome's built-in AI APIs (Prompt API, Summarizer, etc.) and LM Studio
 
 class ChromeAIApp {
   constructor() {
@@ -12,12 +12,18 @@ class ChromeAIApp {
     // Configuration constants
     this.MAX_CONTEXT_LENGTH = 8000; // Maximum context length for AI queries
     
+    // AI mode: 'chrome' or 'lmstudio'
+    this.aiMode = 'chrome';
+    this.lmstudioUrl = 'http://localhost:1234/v1/chat/completions';
+    this.lmstudioModel = '';
+    
     this.initializeApp();
   }
 
   async initializeApp() {
     this.setupDOMReferences();
     this.setupEventListeners();
+    await this.loadSettings();
     await this.initializeAI();
     this.checkForPendingPrompt();
     this.autoResizeTextarea();
@@ -32,6 +38,15 @@ class ChromeAIApp {
       sendBtn: document.getElementById('sendBtn'),
       contextBtn: document.getElementById('contextBtn'),
       clearBtn: document.getElementById('clearBtn'),
+      settingsBtn: document.getElementById('settingsBtn'),
+      settingsPanel: document.getElementById('settingsPanel'),
+      closeSettingsBtn: document.getElementById('closeSettingsBtn'),
+      saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+      chromeModeRadio: document.getElementById('chromeModeRadio'),
+      lmstudioModeRadio: document.getElementById('lmstudioModeRadio'),
+      lmstudioSettings: document.getElementById('lmstudioSettings'),
+      lmstudioUrl: document.getElementById('lmstudioUrl'),
+      lmstudioModel: document.getElementById('lmstudioModel'),
       statusBar: document.getElementById('statusBar'),
       statusIcon: document.getElementById('statusIcon'),
       statusText: document.getElementById('statusText'),
@@ -61,50 +76,109 @@ class ChromeAIApp {
     // Clear chat
     this.elements.clearBtn.addEventListener('click', () => this.clearChat());
 
+    // Settings panel
+    this.elements.settingsBtn.addEventListener('click', () => this.openSettings());
+    this.elements.closeSettingsBtn.addEventListener('click', () => this.closeSettings());
+    this.elements.saveSettingsBtn.addEventListener('click', () => this.saveSettings());
+    
+    // AI mode radio buttons
+    this.elements.chromeModeRadio.addEventListener('change', () => this.updateSettingsUI());
+    this.elements.lmstudioModeRadio.addEventListener('change', () => this.updateSettingsUI());
+    
+    // Close settings on backdrop click
+    this.elements.settingsPanel.addEventListener('click', (e) => {
+      if (e.target === this.elements.settingsPanel) {
+        this.closeSettings();
+      }
+    });
+
     // Focus input on load
     this.elements.promptInput.focus();
   }
 
   async initializeAI() {
     try {
-      // Check for Chrome AI availability
-      if (!window.ai || !window.ai.languageModel) {
-        throw new Error('Chrome AI not available. Please ensure you are using Chrome Canary with AI features enabled.');
+      if (this.aiMode === 'chrome') {
+        await this.initializeChromeAI();
+      } else if (this.aiMode === 'lmstudio') {
+        await this.initializeLMStudio();
       }
-
-      // Check capabilities
-      const capabilities = await window.ai.languageModel.capabilities();
-      console.log('AI Capabilities:', capabilities);
-
-      if (capabilities.available === 'no') {
-        throw new Error('AI model is not available on this device.');
-      }
-
-      if (capabilities.available === 'after-download') {
-        this.showStatus('Downloading AI model... This may take a while.', 'info');
-      }
-
-      // Create AI session with optimized settings
-      this.session = await window.ai.languageModel.create({
-        systemPrompt: 'You are a helpful AI assistant integrated into Chrome. Provide concise, accurate, and helpful responses. When given page context, use it to provide more relevant answers.',
-        temperature: 0.8,
-        topK: 3
-      });
-
-      // Try to initialize summarizer API if available
-      await this.initializeSummarizer();
-
-      this.showStatus('AI ready! Start chatting below.', 'success');
-      this.elements.modelName.textContent = 'Gemini Nano';
-      
-      // Auto-hide status after 3 seconds
-      setTimeout(() => this.hideStatus(), 3000);
-
     } catch (error) {
       console.error('AI initialization error:', error);
       this.showStatus(error.message, 'error');
       this.elements.modelName.textContent = 'Unavailable';
       this.elements.sendBtn.disabled = true;
+    }
+  }
+
+  async initializeChromeAI() {
+    // Check for Chrome AI availability
+    if (!window.ai || !window.ai.languageModel) {
+      throw new Error('Chrome AI not available. Please ensure you are using Chrome Canary with AI features enabled.');
+    }
+
+    // Check capabilities
+    const capabilities = await window.ai.languageModel.capabilities();
+    console.log('AI Capabilities:', capabilities);
+
+    if (capabilities.available === 'no') {
+      throw new Error('AI model is not available on this device.');
+    }
+
+    if (capabilities.available === 'after-download') {
+      this.showStatus('Downloading AI model... This may take a while.', 'info');
+    }
+
+    // Create AI session with optimized settings
+    this.session = await window.ai.languageModel.create({
+      systemPrompt: 'You are a helpful AI assistant integrated into Chrome. Provide concise, accurate, and helpful responses. When given page context, use it to provide more relevant answers.',
+      temperature: 0.8,
+      topK: 3
+    });
+
+    // Try to initialize summarizer API if available
+    await this.initializeSummarizer();
+
+    this.showStatus('Chrome AI ready! Start chatting below.', 'success');
+    this.elements.modelName.textContent = 'Gemini Nano';
+    this.elements.sendBtn.disabled = false;
+    
+    // Auto-hide status after 3 seconds
+    setTimeout(() => this.hideStatus(), 3000);
+  }
+
+  async initializeLMStudio() {
+    // Test connection to LM Studio
+    try {
+      const response = await fetch(this.lmstudioUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: 'ping' }],
+          model: this.lmstudioModel || undefined,
+          max_tokens: 10,
+          stream: false
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`LM Studio server returned ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const modelName = data.model || this.lmstudioModel || 'LM Studio';
+
+      this.showStatus('LM Studio connected!', 'success');
+      this.elements.modelName.textContent = modelName;
+      this.elements.sendBtn.disabled = false;
+      
+      // Auto-hide status after 3 seconds
+      setTimeout(() => this.hideStatus(), 3000);
+
+    } catch (error) {
+      throw new Error(`Failed to connect to LM Studio: ${error.message}. Make sure LM Studio is running and the server is started.`);
     }
   }
 
@@ -159,7 +233,13 @@ class ChromeAIApp {
 
   async handleSendMessage() {
     const prompt = this.elements.promptInput.value.trim();
-    if (!prompt || !this.session) return;
+    if (!prompt) return;
+    
+    // Check if AI is ready
+    if (this.aiMode === 'chrome' && !this.session) {
+      this.showStatus('Chrome AI not ready. Please check settings.', 'error');
+      return;
+    }
 
     // Clear input
     this.elements.promptInput.value = '';
@@ -186,41 +266,10 @@ class ChromeAIApp {
     const loadingMessage = this.addLoadingMessage();
 
     try {
-      // Check if this is a summarization request
-      const isSummarizationRequest = this.isSummarizationRequest(prompt);
-      
-      if (isSummarizationRequest && this.summarizer && context && context.text) {
-        await this.handleSummarization(context.text, loadingMessage);
-      } else {
-        // Prepare full prompt with context
-        let fullPrompt = prompt;
-        if (context && context.text) {
-          // Optimize context by truncating if too long
-          const contextText = context.text.length > this.MAX_CONTEXT_LENGTH 
-            ? context.text.substring(0, this.MAX_CONTEXT_LENGTH) + '...'
-            : context.text;
-          
-          fullPrompt = `Context from page "${context.title}" (${context.url}):\n\n${contextText}\n\n---\n\nUser question: ${prompt}`;
-        }
-
-        // Stream response from AI
-        const stream = this.session.promptStreaming(fullPrompt);
-        let fullResponse = '';
-
-        // Remove loading message
-        loadingMessage.remove();
-
-        // Add assistant message that will be updated
-        const assistantMessage = this.addMessage('assistant', '');
-
-        for await (const chunk of stream) {
-          fullResponse = chunk.trim();
-          this.updateMessage(assistantMessage, fullResponse);
-        }
-
-        // Store in messages history
-        this.messages.push({ role: 'user', content: prompt, context });
-        this.messages.push({ role: 'assistant', content: fullResponse });
+      if (this.aiMode === 'chrome') {
+        await this.handleChromeAIResponse(prompt, context, loadingMessage);
+      } else if (this.aiMode === 'lmstudio') {
+        await this.handleLMStudioResponse(prompt, context, loadingMessage);
       }
 
       // Track performance
@@ -234,6 +283,94 @@ class ChromeAIApp {
       this.addMessage('assistant', `Sorry, I encountered an error: ${error.message}`);
       this.showStatus('Error generating response', 'error');
     }
+  }
+
+  async handleChromeAIResponse(prompt, context, loadingMessage) {
+    // Check if this is a summarization request
+    const isSummarizationRequest = this.isSummarizationRequest(prompt);
+    
+    if (isSummarizationRequest && this.summarizer && context && context.text) {
+      await this.handleSummarization(context.text, loadingMessage);
+    } else {
+      // Prepare full prompt with context
+      let fullPrompt = prompt;
+      if (context && context.text) {
+        // Optimize context by truncating if too long
+        const contextText = context.text.length > this.MAX_CONTEXT_LENGTH 
+          ? context.text.substring(0, this.MAX_CONTEXT_LENGTH) + '...'
+          : context.text;
+        
+        fullPrompt = `Context from page "${context.title}" (${context.url}):\n\n${contextText}\n\n---\n\nUser question: ${prompt}`;
+      }
+
+      // Stream response from AI
+      const stream = this.session.promptStreaming(fullPrompt);
+      let fullResponse = '';
+
+      // Remove loading message
+      loadingMessage.remove();
+
+      // Add assistant message that will be updated
+      const assistantMessage = this.addMessage('assistant', '');
+
+      for await (const chunk of stream) {
+        fullResponse = chunk.trim();
+        this.updateMessage(assistantMessage, fullResponse);
+      }
+
+      // Store in messages history
+      this.messages.push({ role: 'user', content: prompt, context });
+      this.messages.push({ role: 'assistant', content: fullResponse });
+    }
+  }
+
+  async handleLMStudioResponse(prompt, context, loadingMessage) {
+    // Prepare messages array
+    const messages = [...this.messages.map(m => ({ 
+      role: m.role === 'user' ? 'user' : 'assistant', 
+      content: m.content 
+    }))];
+
+    // Add context if provided
+    let userMessage = prompt;
+    if (context && context.text) {
+      const contextText = context.text.length > this.MAX_CONTEXT_LENGTH 
+        ? context.text.substring(0, this.MAX_CONTEXT_LENGTH) + '...'
+        : context.text;
+      userMessage = `Context from page "${context.title}" (${context.url}):\n\n${contextText}\n\n---\n\nUser question: ${prompt}`;
+    }
+
+    messages.push({ role: 'user', content: userMessage });
+
+    // Call LM Studio API
+    const response = await fetch(this.lmstudioUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messages: messages,
+        model: this.lmstudioModel || undefined,
+        temperature: 0.8,
+        max_tokens: 2000,
+        stream: false
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`LM Studio API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const assistantResponse = data.choices[0].message.content;
+
+    // Remove loading message and add response
+    loadingMessage.remove();
+    this.addMessage('assistant', assistantResponse);
+
+    // Store in messages history
+    this.messages.push({ role: 'user', content: prompt, context });
+    this.messages.push({ role: 'assistant', content: assistantResponse });
   }
 
   isSummarizationRequest(prompt) {
@@ -383,6 +520,78 @@ class ChromeAIApp {
     requestAnimationFrame(() => {
       this.elements.chatContainer.scrollTop = this.elements.chatContainer.scrollHeight;
     });
+  }
+
+  // Settings management
+  async loadSettings() {
+    const settings = await chrome.storage.local.get(['aiMode', 'lmstudioUrl', 'lmstudioModel']);
+    
+    if (settings.aiMode) {
+      this.aiMode = settings.aiMode;
+    }
+    if (settings.lmstudioUrl) {
+      this.lmstudioUrl = settings.lmstudioUrl;
+    }
+    if (settings.lmstudioModel) {
+      this.lmstudioModel = settings.lmstudioModel;
+    }
+
+    // Update UI
+    if (this.aiMode === 'chrome') {
+      this.elements.chromeModeRadio.checked = true;
+    } else {
+      this.elements.lmstudioModeRadio.checked = true;
+    }
+    this.elements.lmstudioUrl.value = this.lmstudioUrl;
+    this.elements.lmstudioModel.value = this.lmstudioModel;
+    this.updateSettingsUI();
+  }
+
+  async saveSettings() {
+    const newMode = this.elements.chromeModeRadio.checked ? 'chrome' : 'lmstudio';
+    const newUrl = this.elements.lmstudioUrl.value;
+    const newModel = this.elements.lmstudioModel.value;
+
+    // Save to storage
+    await chrome.storage.local.set({
+      aiMode: newMode,
+      lmstudioUrl: newUrl,
+      lmstudioModel: newModel
+    });
+
+    // Update local state
+    const modeChanged = this.aiMode !== newMode;
+    this.aiMode = newMode;
+    this.lmstudioUrl = newUrl;
+    this.lmstudioModel = newModel;
+
+    // Reinitialize AI if mode changed
+    if (modeChanged) {
+      this.session = null;
+      this.summarizer = null;
+      this.showStatus('Switching AI provider...', 'info');
+      await this.initializeAI();
+    }
+
+    this.closeSettings();
+    this.showStatus('Settings saved!', 'success');
+    setTimeout(() => this.hideStatus(), 2000);
+  }
+
+  openSettings() {
+    this.elements.settingsPanel.classList.add('active');
+  }
+
+  closeSettings() {
+    this.elements.settingsPanel.classList.remove('active');
+  }
+
+  updateSettingsUI() {
+    if (this.elements.lmstudioModeRadio.checked) {
+      this.elements.lmstudioSettings.classList.add('active');
+    } else {
+      this.elements.lmstudioSettings.classList.remove('active');
+    }
   }
 }
 

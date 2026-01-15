@@ -1,20 +1,23 @@
 # Chrome AI Sidebar 🤖
 
-A beautiful, performant Chrome extension that integrates Google's built-in AI models directly into your browser with full page context awareness. Built with Material Design 3 for a stunning user experience.
+A beautiful, performant Chrome extension that integrates both Google's built-in AI (Gemini Nano) **and** LM Studio for local LLM inference. Choose your preferred AI provider with full page context awareness and Material Design 3 UI.
 
 ![Chrome AI Sidebar Preview](https://github.com/user-attachments/assets/14ac0577-2896-4d91-aa06-ad1d4b53cc75)
 
 ## ✨ Features
 
-- **🚀 Local & Fast**: Uses Google's on-device Gemini Nano model for instant responses
+- **🤖 Dual AI Support**: Switch between Chrome AI (Gemini Nano) and LM Studio
+- **🚀 Local & Fast**: On-device processing for privacy and speed
 - **🔒 Private**: All processing happens locally on your device
 - **📄 Context-Aware**: Include current page context in your queries
 - **🎨 Beautiful UI**: Material Design 3 with smooth animations
 - **⌨️ Keyboard Shortcuts**: Quick access with `Ctrl+Shift+Y` (or `Cmd+Shift+Y` on Mac)
 - **📱 Side Panel**: Non-intrusive sidebar interface
-- **✨ Streaming Responses**: Real-time AI responses as they're generated
+- **✨ Streaming Responses**: Real-time AI responses as they're generated (Chrome AI mode)
 
-## 🎯 Prerequisites
+## 🔧 Prerequisites
+
+### For Chrome AI Mode
 
 This extension requires **Chrome Canary** (version 127+) with experimental AI features enabled:
 
@@ -30,6 +33,17 @@ This extension requires **Chrome Canary** (version 127+) with experimental AI fe
    - Navigate to `chrome://components/`
    - Find "Optimization Guide On Device Model"
    - Click "Check for update" and wait for download to complete
+
+### For LM Studio Mode
+
+1. **Download LM Studio**: https://lmstudio.ai/
+2. **Download a Model**: Use LM Studio to download your preferred model (e.g., Llama 2, Mistral, etc.)
+3. **Start the Server**:
+   - Open LM Studio
+   - Go to the "Local Server" tab
+   - Select your model
+   - Click "Start Server"
+   - Default endpoint: `http://localhost:1234/v1/chat/completions`
 
 ## 📦 Installation
 

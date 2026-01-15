@@ -10,6 +10,56 @@
 </head>
 <body>
   <div class="app-container">
+    <!-- Settings Panel -->
+    <div id="settingsPanel" class="settings-panel">
+      <div class="settings-content">
+        <div class="settings-header">
+          <h2>Settings</h2>
+          <button id="closeSettingsBtn" class="icon-button">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        
+        <div class="settings-section">
+          <h3>AI Provider</h3>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="aiMode" value="chrome" id="chromeModeRadio" checked>
+              <div class="radio-content">
+                <span class="radio-title">Chrome AI (Gemini Nano)</span>
+                <span class="radio-description">Built-in on-device AI - no setup required</span>
+              </div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="aiMode" value="lmstudio" id="lmstudioModeRadio">
+              <div class="radio-content">
+                <span class="radio-title">LM Studio</span>
+                <span class="radio-description">Connect to local LM Studio server</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-section" id="lmstudioSettings">
+          <h3>LM Studio Configuration</h3>
+          <div class="form-group">
+            <label for="lmstudioUrl">Server URL</label>
+            <input type="text" id="lmstudioUrl" class="text-input" value="http://localhost:1234/v1/chat/completions" placeholder="http://localhost:1234/v1/chat/completions">
+          </div>
+          <div class="form-group">
+            <label for="lmstudioModel">Model Name (optional)</label>
+            <input type="text" id="lmstudioModel" class="text-input" placeholder="e.g., llama-2-7b">
+            <span class="input-hint">Leave empty to use default model</span>
+          </div>
+        </div>
+
+        <button id="saveSettingsBtn" class="primary-button">
+          <span class="material-icons">save</span>
+          <span>Save Settings</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Header -->
     <header class="header">
       <div class="header-content">
