@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chrome AI Sidebar - Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    :root {
+      --md-sys-color-primary: #6750A4;
+      --md-sys-color-primary-container: #EADDFF;
+      --md-sys-color-on-primary: #FFFFFF;
+      --md-sys-color-on-primary-container: #21005D;
+      --md-sys-color-secondary: #625B71;
+      --md-sys-color-secondary-container: #E8DEF8;
+      --md-sys-color-on-secondary: #FFFFFF;
+      --md-sys-color-on-secondary-container: #1D192B;
+      --md-sys-color-surface: #FEF7FF;
+      --md-sys-color-surface-variant: #E7E0EC;
+      --md-sys-color-on-surface: #1C1B1F;
+      --md-sys-color-on-surface-variant: #49454F;
+      --md-sys-color-outline: #79747E;
+      --md-sys-elevation-2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .preview-container {
+      display: flex;
+      gap: 40px;
+      max-width: 1200px;
+      align-items: flex-start;
+    }
+
+    .info-panel {
+      flex: 1;
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-panel h1 {
+      color: var(--md-sys-color-primary);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .info-panel .material-icons {
+      font-size: 48px;
+    }
+
+    .feature-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .feature-list li {
+      padding: 12px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .feature-list li:last-child {
+      border-bottom: none;
+    }
+
+    .feature-list .material-icons {
+      color: var(--md-sys-color-primary);
+      font-size: 24px;
+    }
+
+    .sidebar-preview {
+      width: 400px;
+      height: 600px;
+      background: var(--md-sys-color-surface);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background-color: var(--md-sys-color-primary);
+      color: var(--md-sys-color-on-primary);
+      padding: var(--spacing-md);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .header-icon {
+      font-size: 28px;
+    }
+
+    .header-title {
+      flex: 1;
+      font-size: 20px;
+      font-weight: 500;
+    }
+
+    .chat-area {
+      flex: 1;
+      padding: var(--spacing-md);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+
+    .message {
+      display: flex;
+      gap: var(--spacing-sm);
+    }
+
+    .message.user {
+      flex-direction: row-reverse;
+    }
+
+    .message-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .message.user .message-avatar {
+      background-color: var(--md-sys-color-primary);
+      color: var(--md-sys-color-on-primary);
+    }
+
+    .message.assistant .message-avatar {
+      background-color: var(--md-sys-color-secondary-container);
+      color: var(--md-sys-color-on-secondary-container);
+    }
+
+    .message-avatar .material-icons {
+      font-size: 20px;
+    }
+
+    .message-content {
+      flex: 1;
+      max-width: 85%;
+      font-size: 14px;
+      padding: 10px 14px;
+      border-radius: 16px;
+      line-height: 1.5;
+    }
+
+    .message.user .message-content {
+      background-color: var(--md-sys-color-primary-container);
+      color: var(--md-sys-color-on-primary-container);
+      border-radius: 16px 16px 4px 16px;
+      margin-left: auto;
+    }
+
+    .message.assistant .message-content {
+      background-color: var(--md-sys-color-surface-variant);
+      color: var(--md-sys-color-on-surface-variant);
+      border-radius: 16px 16px 16px 4px;
+    }
+
+    .input-area {
+      padding: var(--spacing-md);
+      border-top: 1px solid var(--md-sys-color-outline);
+    }
+
+    .input-controls {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      background-color: var(--md-sys-color-surface-variant);
+      border-radius: 24px;
+      padding: 8px 12px;
+    }
+
+    .input-controls input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-family: inherit;
+      font-size: 14px;
+    }
+
+    .icon-btn {
+      background: var(--md-sys-color-primary);
+      color: var(--md-sys-color-on-primary);
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .badge {
+      display: inline-block;
+      background: var(--md-sys-color-secondary-container);
+      color: var(--md-sys-color-on-secondary-container);
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      margin: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <div class="info-panel">
+      <h1>
+        <span class="material-icons">smart_toy</span>
+        Chrome AI Sidebar
+      </h1>
+      <p style="color: #666; margin-bottom: 30px;">
+        A beautiful, performant Chrome extension that integrates Google's built-in AI 
+        directly into your browser with full page context awareness.
+      </p>
+
+      <h3 style="color: var(--md-sys-color-primary); margin-top: 30px;">Features</h3>
+      <ul class="feature-list">
+        <li>
+          <span class="material-icons">speed</span>
+          <span><strong>Local & Fast</strong> - On-device processing with Gemini Nano</span>
+        </li>
+        <li>
+          <span class="material-icons">privacy_tip</span>
+          <span><strong>Private</strong> - No data sent to external servers</span>
+        </li>
+        <li>
+          <span class="material-icons">article</span>
+          <span><strong>Context-Aware</strong> - Include page content in queries</span>
+        </li>
+        <li>
+          <span class="material-icons">palette</span>
+          <span><strong>Material Design 3</strong> - Beautiful, modern UI</span>
+        </li>
+        <li>
+          <span class="material-icons">stream</span>
+          <span><strong>Streaming</strong> - Real-time response generation</span>
+        </li>
+        <li>
+          <span class="material-icons">summarize</span>
+          <span><strong>Smart Summaries</strong> - Built-in summarization API</span>
+        </li>
+      </ul>
+
+      <div style="margin-top: 30px;">
+        <div class="badge">Material Design 3</div>
+        <div class="badge">Gemini Nano</div>
+        <div class="badge">Side Panel API</div>
+        <div class="badge">Manifest V3</div>
+      </div>
+
+      <p style="margin-top: 30px; color: #999; font-size: 12px;">
+        <strong>Requirements:</strong> Chrome Canary 127+ with AI flags enabled
+      </p>
+    </div>
+
+    <div class="sidebar-preview">
+      <div class="header">
+        <span class="material-icons header-icon">smart_toy</span>
+        <div class="header-title">Chrome AI</div>
+      </div>
+      
+      <div class="chat-area">
+        <div class="message user">
+          <div class="message-avatar">
+            <span class="material-icons">person</span>
+          </div>
+          <div class="message-content">
+            What are the benefits of on-device AI?
+          </div>
+        </div>
+
+        <div class="message assistant">
+          <div class="message-avatar">
+            <span class="material-icons">smart_toy</span>
+          </div>
+          <div class="message-content">
+            On-device AI offers several key benefits:<br><br>
+            1. Privacy - your data stays local<br>
+            2. Speed - no network latency<br>
+            3. Offline - works without internet<br>
+            4. Cost - no API fees<br><br>
+            It's perfect for sensitive tasks and provides instant responses!
+          </div>
+        </div>
+
+        <div class="message user">
+          <div class="message-avatar">
+            <span class="material-icons">person</span>
+          </div>
+          <div class="message-content">
+            How does it compare to cloud AI?
+          </div>
+        </div>
+
+        <div class="message assistant">
+          <div class="message-avatar">
+            <span class="material-icons">smart_toy</span>
+          </div>
+          <div class="message-content">
+            On-device AI is faster and more private, while cloud AI can handle more complex tasks. Chrome AI finds the perfect balance!
+          </div>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <div class="input-controls">
+          <input type="text" placeholder="Ask anything..." value="">
+          <button class="icon-btn">
+            <span class="material-icons">send</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
