@@ -1407,6 +1407,7 @@ class ChromeAIApp {
   async handleGeminiOAuth() {
     try {
       const redirectUrl = chrome.identity.getRedirectURL();
+      console.log('OAuth Redirect URI:', redirectUrl); // For debugging
       const authUrl = `https://accounts.google.com/o/oauth2/auth?` +
         `client_id=${GEMINI_OAUTH_CLIENT_ID}&` +
         `response_type=token&` +
