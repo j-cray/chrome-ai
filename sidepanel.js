@@ -2,7 +2,7 @@
 // Integrates with Chrome's built-in AI APIs (Prompt API, Summarizer, etc.) and LM Studio
 
 // Configuration constants
-const GEMINI_OAUTH_CLIENT_ID = '397296783328-pufhj0l54grfg9d25227dk4859t3au77.apps.googleusercontent.com'; // Configure your OAuth client ID here from Google Cloud Console
+const GEMINI_OAUTH_CLIENT_ID = '397296783328-enlg7dckvbht1gmevs6456u93qbad38a.apps.googleusercontent.com'; // Configure your OAuth client ID here from Google Cloud Console
 const CONNECT_TIMEOUT_MS = 10000;
 const REQUEST_TIMEOUT_MS = 60000;
 
