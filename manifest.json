@@ -37,7 +37,7 @@
     }
   },
   "oauth2": {
-    "client_id": "397296783328-enlg7dckvbht1gmevs6456u93qbad38a.apps.googleusercontent.com",
+    "client_id": "397296783328-c7fmihsf0he71741utoesmiq1jbi1v8n.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/generative-language"
     ]

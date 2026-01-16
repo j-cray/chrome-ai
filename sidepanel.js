@@ -2,7 +2,7 @@
 // Integrates with Chrome's built-in AI APIs (Prompt API, Summarizer, etc.) and LM Studio
 
 // Configuration constants
-const GEMINI_OAUTH_CLIENT_ID = '397296783328-enlg7dckvbht1gmevs6456u93qbad38a.apps.googleusercontent.com'; // Configure your OAuth client ID here from Google Cloud Console
+const GEMINI_OAUTH_CLIENT_ID = '397296783328-c7fmihsf0he71741utoesmiq1jbi1v8n.apps.googleusercontent.com'; // Configure your OAuth client ID here from Google Cloud Console
 const CONNECT_TIMEOUT_MS = 10000;
 const REQUEST_TIMEOUT_MS = 60000;
 
@@ -1406,28 +1406,20 @@ class ChromeAIApp {
 
   async handleGeminiOAuth() {
     try {
-      const redirectUrl = chrome.identity.getRedirectURL();
-      console.log('OAuth Redirect URI:', redirectUrl); // For debugging
-      const authUrl = `https://accounts.google.com/o/oauth2/auth?` +
-        `client_id=${GEMINI_OAUTH_CLIENT_ID}&` +
-        `response_type=token&` +
-        `redirect_uri=${encodeURIComponent(redirectUrl)}&` +
-        `scope=${encodeURIComponent('https://www.googleapis.com/auth/generative-language')}`;
+      this.showStatus('Signing in with Google...', 'info');
 
-      if (!GEMINI_OAUTH_CLIENT_ID) {
-        this.showStatus('OAuth client ID not configured. Please set GEMINI_OAUTH_CLIENT_ID in sidepanel.js', 'error');
-        return;
-      }
-
-      const responseUrl = await chrome.identity.launchWebAuthFlow({
-        url: authUrl,
-        interactive: true
+      const token = await new Promise((resolve, reject) => {
+        chrome.identity.getAuthToken({ interactive: true }, (token) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve(token);
+          }
+        });
       });
 
-      // Extract access token from response URL
-      const match = responseUrl.match(/access_token=([^&]+)/);
-      if (match) {
-        this.geminiOAuthToken = match[1];
+      if (token) {
+        this.geminiOAuthToken = token;
         await chrome.storage.local.set({ geminiOAuthToken: this.geminiOAuthToken });
         this.elements.geminiOAuthStatus.textContent = '✓ Signed in';
         this.elements.geminiOAuthStatus.style.color = 'var(--md-sys-color-primary)';
